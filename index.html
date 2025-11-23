@@ -14,9 +14,6 @@
     <!-- Google Font: Nunito -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Google Maps - IMPORTANT: REPLACE "YOUR_API_KEY" with your actual Google Maps API key -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=REPLACE_WITH_YOUR_API_KEY&callback=initMap" async defer></script>
-
     <!-- Firebase SDKs & App Logic -->
     <script type="module" src="app.js"></script>
 
@@ -143,22 +140,6 @@
                 <div class="flex justify-center py-10"><span class="material-icons-round animate-spin text-brand-secondary text-3xl">refresh</span></div>
             </div>
         </div>
-    </section>
-
-    <!-- ================= VIEW: MAP ================= -->
-    <section id="screen-map" class="hidden flex-col h-full relative">
-        <header class="bg-white shadow-sm px-4 py-3 flex justify-between items-center z-20 sticky top-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-brand-secondary to-teal-400 rounded-xl flex items-center justify-center text-white shadow-md transform -rotate-3 hover:rotate-0 transition-transform">
-                    <span class="material-icons-round">map</span>
-                </div>
-                <div>
-                     <h1 class="font-extrabold text-lg text-gray-800 leading-none">Hartă Evenimente</h1>
-                     <p class="text-[10px] font-bold text-brand-primary uppercase tracking-widest leading-tight">Corbeanca</p>
-                </div>
-            </div>
-        </header>
-        <div id="map-container" class="flex-1 bg-gray-200"></div>
     </section>
 
     <!-- ================= VIEW: PROFILE ================= -->
@@ -637,7 +618,7 @@
             <span class="material-icons-round text-2xl">home</span>
             <span class="text-[10px] font-bold">Acasă</span>
         </button>
-        <button onclick="showScreen('map')" id="nav-map" class="nav-btn flex flex-col items-center text-gray-300">
+        <button class="nav-btn flex flex-col items-center text-gray-300">
             <span class="material-icons-round text-2xl">map</span>
             <span class="text-[10px] font-bold">Hartă</span>
         </button>

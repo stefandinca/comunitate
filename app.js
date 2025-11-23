@@ -93,8 +93,6 @@ let unsubscribeInterested = null;
 let unsubscribeComments = null;
 let unsubscribeNotifs = null;
 let unsubscribePublicProfilePosts = null;
-let map = null;
-let markers = [];
 let editingPostId = null;
 let currentCommentingPostId = null;
 let currentViewingPostId = null;
@@ -109,7 +107,6 @@ let activeProfileTab = 'my-posts';
 const screens = {
     login: document.getElementById('screen-login'),
     feed: document.getElementById('screen-feed'),
-    map: document.getElementById('screen-map'),
     profile: document.getElementById('screen-profile'),
     create: document.getElementById('modal-create'),
     edit: document.getElementById('modal-edit'),
@@ -139,7 +136,13 @@ function showScreen(screenName) {
             el.classList.add('hidden');
             el.classList.remove('flex');
         }
+        if (el.id.startsWith('modal')) {
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
     });
+    document.getElementById('bottom-nav').classList.add('hidden');
+
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-brand-primary', 'text-gray-300'));
 
     if (screenName === 'login') {
@@ -152,13 +155,6 @@ function showScreen(screenName) {
         document.getElementById('bottom-nav').classList.remove('hidden');
         document.getElementById('nav-home').classList.replace('text-gray-300', 'text-brand-primary');
         loadPosts();
-    } else if (screenName === 'map') {
-        screens.map.classList.remove('hidden');
-        screens.map.classList.add('flex');
-        document.getElementById('bottom-nav').classList.remove('hidden');
-        document.getElementById('nav-map').classList.replace('text-gray-300', 'text-brand-primary');
-        initMap();
-        loadEventsForMap(); 
     } else if (screenName === 'profile') {
         screens.profile.classList.remove('hidden');
         screens.profile.classList.add('flex');
@@ -531,67 +527,6 @@ function loadInterestedEvents() {
         }
         posts.forEach(post => container.appendChild(createEventCard(post)));
     });
-}
-
-window.initMap = () => {
-    if (!map) {
-        map = new google.maps.Map(document.getElementById("map-container"), {
-            center: { lat: 44.59, lng: 25.97 },
-            zoom: 13,
-        });
-    }
-}
-
-function loadEventsForMap() {
-    clearMarkers();
-    const geocoder = new google.maps.Geocoder();
-    const q = query(getCollectionRef(COLL_POSTS), where('type', '==', 'event'));
-    onSnapshot(q, (snapshot) => {
-        snapshot.forEach(doc => {
-            const post = { id: doc.id, ...doc.data() };
-            if (post.eventLocation) {
-                const cachedCoords = localStorage.getItem(`geocache_${post.eventLocation}`);
-                if (cachedCoords) {
-                    const { lat, lng } = JSON.parse(cachedCoords);
-                    addMarkerToMap(post, lat, lng);
-                } else {
-                    geocoder.geocode({ 'address': post.eventLocation }, function(results, status) {
-                        if (status == 'OK') {
-                            const lat = results[0].geometry.location.lat();
-                            const lng = results[0].geometry.location.lng();
-                            localStorage.setItem(`geocache_${post.eventLocation}`, JSON.stringify({ lat, lng }));
-                            addMarkerToMap(post, lat, lng);
-                        }
-                    });
-                }
-            }
-        });
-    });
-}
-
-function addMarkerToMap(post, lat, lng) {
-    const marker = new google.maps.Marker({
-        position: { lat, lng },
-        map: map,
-        title: post.title
-    });
-
-    const infowindow = new google.maps.InfoWindow({
-        content: `<b>${post.title}</b><br><button onclick="openPostDetails('${post.id}')" class="text-brand-primary">Vezi detalii</button>`
-    });
-
-    marker.addListener("click", () => {
-        infowindow.open(map, marker);
-    });
-
-    markers.push(marker);
-}
-
-function clearMarkers() {
-    for (let i = 0; i < markers.length; i++) {
-        markers[i].setMap(null);
-    }
-    markers = [];
 }
 
 // --- POST LOGIC ---
@@ -1071,10 +1006,10 @@ window.viewUserProfile = async (targetUid) => {
 
             posts.forEach(post => {
                 const div = document.createElement('div');
-                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm cursor-pointer hover:bg-gray-100 transition-colors";
-
-                const priceInfo = post.type === 'event'
-                    ? (post.isFree ? 'Gratuit' : `${post.price} RON`)
+                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm";
+                
+                const priceInfo = post.type === 'event' 
+                    ? (post.isFree ? 'Gratuit' : `${post.price} RON`) 
                     : `${post.price} RON`;
 
                 div.innerHTML = `
@@ -1085,14 +1020,7 @@ window.viewUserProfile = async (targetUid) => {
                             <span class="text-xs text-brand-primary font-bold">${priceInfo}</span>
                         </div>
                     </div>
-                    <span class="material-icons-round text-gray-400">arrow_forward</span>
                 `;
-
-                div.onclick = () => {
-                    toggleModal('modal-public-profile', false);
-                    openPostDetails(post.id);
-                };
-
                 postsList.appendChild(div);
             });
         });
