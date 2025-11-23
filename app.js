@@ -104,7 +104,6 @@ let pendingPostImageBase64 = null;
 let pendingEditPostImageBase64 = null;
 let isRegisterMode = false;
 let activePostType = 'sale';
-let activeFilter = 'all';
 let activeProfileTab = 'my-posts';
 
 // Pagination state
