@@ -364,7 +364,7 @@ function loadUserProfile() {
     else avatarEl.src = `https://ui-avatars.com/api/?name=${userProfile.name}&background=random`;
 }
 
-// ... (Post logic remains same) ...
+// --- POST LOGIC ---
 window.switchPostType = (type) => {
     activePostType = type;
     const saleBtn = document.getElementById('type-sale-btn');
@@ -428,19 +428,6 @@ window.toggleInterest = async (postId) => {
                 interestedCount: increment(1)
             });
             showToast('Te-ai înscris la interes.');
-
-            // Send notification to event organizer (only if not their own event)
-            if (postData.uid !== currentUser.uid) {
-                await addDoc(getCollectionRef(COLL_NOTIF), {
-                    recipientUid: postData.uid,
-                    senderName: userProfile?.name || 'Cineva',
-                    postId: postId,
-                    postTitle: postData.title,
-                    type: 'interest',
-                    read: false,
-                    timestamp: serverTimestamp()
-                });
-            }
         }
     } catch (e) {
         showToast('Eroare la actualizare.', 'error');
@@ -484,6 +471,7 @@ createForm.addEventListener('submit', async (e) => {
             const isPaid = document.getElementById('event-paid').checked;
             formData.isFree = !isPaid;
             formData.price = isPaid ? document.getElementById('event-price-val').value : 0;
+            formData.eventLocation = document.getElementById('event-location').value;
             formData.interestedCount = 0;
             formData.interestedUsers = [];
         }
@@ -563,9 +551,9 @@ window.viewUserProfile = async (targetUid) => {
                 // Use a simplified version of card or reuse createMyPostCard
                 const card = createMyPostCard(post); // This shows "Edit/Delete" which is wrong for public view!
                 // Let's fix that below by making a read-only version
-
+                
                 const div = document.createElement('div');
-                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm cursor-pointer hover:bg-gray-100 transition-colors";
+                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm";
                 div.innerHTML = `
                     <div class="flex-1">
                         <h4 class="font-bold text-gray-800">${post.title}</h4>
@@ -574,12 +562,7 @@ window.viewUserProfile = async (targetUid) => {
                             <span class="text-xs text-brand-primary font-bold">${post.isFree ? 'Gratuit' : (post.price + ' RON')}</span>
                         </div>
                     </div>
-                    <span class="material-icons-round text-gray-400">arrow_forward</span>
                 `;
-                div.onclick = () => {
-                    toggleModal('modal-public-profile', false);
-                    openComments(post.id);
-                };
                 postsList.appendChild(div);
             });
         });
@@ -619,29 +602,14 @@ function listenForNotifications() {
 
         notifs.forEach(n => {
             if (!n.read) unreadCount++;
-
-            // Determine icon and message based on notification type
-            let icon, iconBg, iconColor, message;
-            if (n.type === 'interest') {
-                icon = 'favorite';
-                iconBg = 'bg-pink-100';
-                iconColor = 'text-pink-600';
-                message = `<span class="font-bold">${n.senderName}</span> este interesat de evenimentul tău <span class="font-bold">"${n.postTitle}"</span>.`;
-            } else {
-                icon = 'comment';
-                iconBg = 'bg-blue-100';
-                iconColor = 'text-blue-600';
-                message = `<span class="font-bold">${n.senderName}</span> a comentat la postarea ta <span class="font-bold">"${n.postTitle}"</span>.`;
-            }
-
             const div = document.createElement('div');
             div.className = `p-4 border-b border-gray-100 flex items-start gap-3 ${n.read ? 'bg-white' : 'bg-blue-50'}`;
             div.innerHTML = `
-                <div class="${iconBg} p-2 rounded-full ${iconColor}">
-                    <span class="material-icons-round text-sm">${icon}</span>
+                <div class="bg-blue-100 p-2 rounded-full text-blue-600">
+                    <span class="material-icons-round text-sm">comment</span>
                 </div>
                 <div class="flex-1">
-                    <p class="text-sm text-gray-800">${message}</p>
+                    <p class="text-sm text-gray-800"><span class="font-bold">${n.senderName}</span> a comentat la postarea ta <span class="font-bold">"${n.postTitle}"</span>.</p>
                     <p class="text-xs text-gray-400 mt-1">${new Date(n.timestamp?.seconds * 1000).toLocaleDateString('ro-RO')}</p>
                 </div>
                 ${!n.read ? '<div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>' : ''}
@@ -965,6 +933,9 @@ function createEventCard(post) {
     const btnClass = isInterested ? "bg-purple-600 text-white shadow-md transform scale-105" : "bg-purple-50 text-purple-700 hover:bg-purple-100";
     const btnIcon = isInterested ? "favorite" : "favorite_border";
 
+    const location = post.eventLocation || 'Corbeanca';
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+
     article.innerHTML = `
         <div class="bg-purple-50 px-4 py-2 flex items-center justify-between text-sm font-bold text-purple-700">
             <div class="flex items-center gap-2">
@@ -982,6 +953,7 @@ function createEventCard(post) {
                 </div>
             </div>
             <h3 class="font-bold text-lg mb-1 leading-tight">${post.title}</h3>
+            
             <div class="flex gap-4 my-3">
                 <div class="flex items-center gap-2 text-gray-700 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 w-full">
                     <span class="material-icons-round text-purple-400">calendar_today</span>
@@ -991,7 +963,34 @@ function createEventCard(post) {
                     </div>
                 </div>
             </div>
+
+            <!-- Location & Map Button -->
+            <div class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 mb-3">
+                <div class="flex items-center gap-2 text-gray-700 overflow-hidden">
+                    <span class="material-icons-round text-red-400">location_on</span>
+                    <p class="text-sm font-bold truncate pr-2">${location}</p>
+                </div>
+                <a href="${mapUrl}" target="_blank" class="flex-shrink-0 bg-white text-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-blue-50 transition-colors shadow-sm">
+                    <span class="material-icons-round text-sm">directions</span>
+                    Indicații
+                </a>
+            </div>
+
+            <!-- Map Preview Iframe -->
+            <div class="rounded-xl overflow-hidden border border-gray-100 mb-4">
+                <iframe 
+                    width="100%" 
+                    height="150" 
+                    frameborder="0" 
+                    style="border:0" 
+                    src="https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed"
+                    loading="lazy"
+                    allowfullscreen>
+                </iframe>
+            </div>
+
             <p class="text-gray-500 text-sm mb-4 line-clamp-3">${post.description}</p>
+            
             <div class="flex justify-between items-center mt-2 border-t border-gray-50 pt-3">
                 <div class="flex items-center gap-1 text-xs text-gray-500 font-bold">
                     <button onclick="openComments('${post.id}')" class="flex items-center gap-1 hover:text-brand-primary transition-colors p-1">
@@ -1004,7 +1003,7 @@ function createEventCard(post) {
                 </div>
                 <button id="interest-btn-${post.id}" onclick="toggleInterest('${post.id}')" class="${btnClass} px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-200">
                     <span class="material-icons-round text-sm">${btnIcon}</span>
-                    Interesat
+                    Interes
                 </button>
             </div>
         </div>
