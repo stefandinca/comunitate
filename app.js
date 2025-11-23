@@ -148,6 +148,7 @@ function showScreen(screenName) {
     if (screenName === 'login') {
         screens.login.classList.remove('hidden');
         screens.login.classList.add('flex');
+        document.getElementById('input-email').focus();
     } else if (screenName === 'feed') {
         screens.feed.classList.remove('hidden');
         screens.feed.classList.add('flex');
@@ -250,6 +251,7 @@ window.toggleAuthMode = () => {
         title.innerText = "Creează Cont";
         btn.innerHTML = `Înregistrează-te <span class="material-icons-round">arrow_forward</span>`;
         toggleText.innerHTML = `Ai deja cont? <span class="text-brand-primary font-bold cursor-pointer" onclick="toggleAuthMode()">Autentifică-te</span>`;
+        document.getElementById('input-name').focus();
     } else {
         extraFields.classList.add('hidden');
         title.innerText = "Bine ai revenit!";
@@ -427,7 +429,7 @@ profileForm.addEventListener('submit', async (e) => {
     const email = document.getElementById('prof-email').value;
     const btn = document.getElementById('btn-save-profile');
     btn.disabled = true;
-    btn.innerText = 'Se salvează...';
+    btn.innerHTML = '<span class="material-icons-round animate-spin">refresh</span> Se salvează...';
     try {
         const newData = { name, phone, email };
         if (pendingAvatarBase64) newData.avatar = pendingAvatarBase64;
@@ -1067,7 +1069,7 @@ function createPostCard(post) {
             </div>
             ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-3 border border-gray-100">` : ''}
             <h3 class="font-bold text-lg mb-1 leading-tight">${post.title}</h3>
-            <p class="text-gray-500 text-sm mb-3 line-clamp-3">${post.description}</p>
+            <p class="text-gray-600 text-base leading-relaxed mb-3 line-clamp-3">${post.description}</p>
             <div class="flex justify-between items-center mt-4">
                 <span class="font-extrabold text-xl text-brand-primary">${post.price} RON</span>
                 <div class="flex gap-2">
@@ -1149,7 +1151,7 @@ function createEventCard(post) {
                 <p class="text-sm font-bold truncate">${location}</p>
             </div>
 
-            <p class="text-gray-500 text-sm mb-4 line-clamp-3">${post.description}</p>
+            <p class="text-gray-600 text-base leading-relaxed mb-4 line-clamp-3">${post.description}</p>
 
             <div class="flex justify-between items-center mt-2 border-t border-gray-50 pt-3">
                 <div class="flex items-center gap-1 text-xs text-gray-500 font-bold">
