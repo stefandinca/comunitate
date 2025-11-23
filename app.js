@@ -57,6 +57,33 @@ function getDocPath(colName, docId) {
     }
 }
 
+function timeAgo(timestamp) {
+    const now = new Date();
+    const seconds = Math.floor((now - timestamp) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) {
+        return Math.floor(interval) + " ani";
+    }
+    interval = seconds / 2592000;
+    if (interval > 1) {
+        return Math.floor(interval) + " luni";
+    }
+    interval = seconds / 86400;
+    if (interval > 1) {
+        return Math.floor(interval) + " zile";
+    }
+    interval = seconds / 3600;
+    if (interval > 1) {
+        return Math.floor(interval) + "h";
+    }
+    interval = seconds / 60;
+    if (interval > 1) {
+        return Math.floor(interval) + "m";
+    }
+    return Math.floor(seconds) + "s";
+}
+
 // --- STATE MANAGEMENT ---
 let currentUser = null;
 let userProfile = null;
@@ -686,7 +713,7 @@ function listenForNotifications() {
                 </div>
                 <div class="flex-1">
                     <p class="text-sm text-gray-800"><span class="font-bold">${n.senderName}</span> a comentat la postarea ta <span class="font-bold">"${n.postTitle}"</span>.</p>
-                    <p class="text-xs text-gray-400 mt-1">${new Date(n.timestamp?.seconds * 1000).toLocaleDateString('ro-RO')}</p>
+                    <p class="text-xs text-gray-400 mt-1">acum ${timeAgo(new Date(n.timestamp?.seconds * 1000))}</p>
                 </div>
                 ${!n.read ? '<div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>' : ''}
             `;
@@ -754,7 +781,7 @@ window.openComments = (postId) => {
                         <p class="text-[10px] font-bold text-gray-500 mb-0.5 cursor-pointer hover:underline" onclick="viewUserProfile('${comment.uid}')">${comment.authorName}</p>
                         <p class="text-sm leading-relaxed">${comment.text}</p>
                     </div>
-                    <p class="text-[10px] text-gray-300 mt-1 ml-2">${new Date(comment.timestamp?.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p class="text-[10px] text-gray-300 mt-1 ml-2">acum ${timeAgo(new Date(comment.timestamp?.seconds * 1000))}</p>
                 </div>
             `;
             commentsList.appendChild(div);
@@ -1015,7 +1042,7 @@ function createPostCard(post) {
     const article = document.createElement('article');
     article.className = "bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-lg transition-shadow";
 
-    const date = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleDateString('ro-RO') : '';
+    const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
     const commentCount = post.commentCount || 0;
 
@@ -1074,6 +1101,7 @@ function createEventCard(post) {
     const article = document.createElement('article');
     article.className = "bg-white rounded-3xl shadow-sm border border-purple-100 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-lg transition-shadow";
 
+    const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
     const interestedCount = post.interestedCount || 0;
     const commentCount = post.commentCount || 0;
@@ -1100,7 +1128,7 @@ function createEventCard(post) {
                 <img src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover bg-gray-100">
                 <div>
                     <p class="font-bold text-sm text-gray-800 hover:underline">${post.authorName}</p>
-                    <p class="text-xs text-gray-400">Organizator</p>
+                    <p class="text-xs text-gray-400">acum ${date}</p>
                 </div>
             </div>
             ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-3 border border-gray-100">` : ''}
@@ -1182,7 +1210,7 @@ window.openPostDetails = async (postId) => {
 
 function renderSaleDetails(post, container) {
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
-    const date = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
 
     let cleanPhone = (post.authorPhone || '').replace(/\D/g, '');
     if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
@@ -1196,7 +1224,7 @@ function renderSaleDetails(post, container) {
                 <img src="${avatarSrc}" class="w-12 h-12 rounded-full object-cover bg-gray-100 border-2 border-gray-100">
                 <div>
                     <p class="font-bold text-gray-800">${post.authorName}</p>
-                    <p class="text-xs text-gray-400">${date}</p>
+                    <p class="text-xs text-gray-400">acum ${date}</p>
                 </div>
             </div>
 
