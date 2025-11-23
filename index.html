@@ -136,6 +136,34 @@
                 <h2 id="user-display-name" class="text-2xl font-extrabold text-gray-900">Salut! 👋</h2>
                 <p class="text-gray-600">Iată ce vând vecinii tăi astăzi.</p>
             </div>
+
+            <!-- Filter Pills -->
+            <div class="mb-4 -mx-4 px-4">
+                <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                    <button onclick="filterPosts('all')" data-filter="all" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-brand-primary text-white shadow-md">
+                        Toate
+                    </button>
+                    <button onclick="filterPosts('sale')" data-filter="sale" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
+                        🛍️ Bazar
+                    </button>
+                    <button onclick="filterPosts('borrow')" data-filter="borrow" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
+                        🤝 Cereri împrumut
+                    </button>
+                    <button onclick="filterPosts('event')" data-filter="event" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
+                        📅 Evenimente
+                    </button>
+                    <button onclick="filterPosts('local')" data-filter="local" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
+                        📍 Interes Local
+                    </button>
+                    <button onclick="filterPosts('business')" data-filter="business" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
+                        💼 Afaceri locale
+                    </button>
+                    <button onclick="filterPosts('recommendation')" data-filter="recommendation" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
+                        ⭐ Recomandări
+                    </button>
+                </div>
+            </div>
+
             <div id="feed-container" class="flex flex-col gap-2">
                 <div class="flex justify-center py-10"><span class="material-icons-round animate-spin text-brand-secondary text-3xl">refresh</span></div>
             </div>

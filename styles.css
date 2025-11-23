@@ -40,6 +40,13 @@ body {
     padding-bottom: env(safe-area-inset-bottom);
 }
 
+.filter-pill.active {
+    background-color: #FF8C78;
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+}
+
+
 .btn-shadow {
     box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
 }

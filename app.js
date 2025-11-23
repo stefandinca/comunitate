@@ -104,6 +104,7 @@ let pendingPostImageBase64 = null;
 let pendingEditPostImageBase64 = null;
 let isRegisterMode = false;
 let activePostType = 'sale';
+let activeFilter = 'all';
 let activeProfileTab = 'my-posts';
 
 // Pagination state
@@ -111,6 +112,9 @@ let lastVisiblePost = null;
 let hasMorePosts = true;
 let isLoadingMorePosts = false;
 let allPostsCache = []; // Store all loaded posts
+
+// Filter state
+let activeFilter = 'all'; // 'all', 'sale', 'borrow', 'event', 'local', 'business', 'recommendation'
 
 // --- DOM ELEMENTS ---
 const screens = {
@@ -471,6 +475,23 @@ function loadUserProfile() {
 
 // --- DATA LOADING FUNCTIONS (Restored) ---
 
+window.filterPosts = function(filterType) {
+    activeFilter = filterType;
+
+    // Update pill UI
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+        const pillFilter = pill.getAttribute('data-filter');
+        if (pillFilter === filterType) {
+            pill.className = 'filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-brand-primary text-white shadow-md';
+        } else {
+            pill.className = 'filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200';
+        }
+    });
+
+    // Reload posts with filter
+    loadPosts();
+};
+
 function loadPosts() {
     if (unsubscribePosts) unsubscribePosts();
 
@@ -479,12 +500,22 @@ function loadPosts() {
     hasMorePosts = true;
     allPostsCache = [];
 
-    // Query with limit and orderBy for pagination
-    const q = query(
-        getCollectionRef(COLL_POSTS),
-        orderBy('timestamp', 'desc'),
-        limit(POSTS_PER_PAGE)
-    );
+    // Build query with optional filter
+    let q;
+    if (activeFilter === 'all') {
+        q = query(
+            getCollectionRef(COLL_POSTS),
+            orderBy('timestamp', 'desc'),
+            limit(POSTS_PER_PAGE)
+        );
+    } else {
+        q = query(
+            getCollectionRef(COLL_POSTS),
+            where('type', '==', activeFilter),
+            orderBy('timestamp', 'desc'),
+            limit(POSTS_PER_PAGE)
+        );
+    }
 
     unsubscribePosts = onSnapshot(q, (snapshot) => {
         feedContainer.innerHTML = '';
@@ -589,12 +620,23 @@ window.loadMorePosts = async () => {
     }
 
     try {
-        const q = query(
-            getCollectionRef(COLL_POSTS),
-            orderBy('timestamp', 'desc'),
-            startAfter(lastVisiblePost),
-            limit(POSTS_PER_PAGE)
-        );
+        let q;
+        if (activeFilter === 'all') {
+            q = query(
+                getCollectionRef(COLL_POSTS),
+                orderBy('timestamp', 'desc'),
+                startAfter(lastVisiblePost),
+                limit(POSTS_PER_PAGE)
+            );
+        } else {
+            q = query(
+                getCollectionRef(COLL_POSTS),
+                where('type', '==', activeFilter),
+                orderBy('timestamp', 'desc'),
+                startAfter(lastVisiblePost),
+                limit(POSTS_PER_PAGE)
+            );
+        }
 
         const snapshot = await getDocs(q);
 
