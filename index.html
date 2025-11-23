@@ -405,8 +405,14 @@
                     
                     <!-- NEW: Location Field -->
                     <div>
-                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Locație (Adresă)</label>
-                        <input type="text" id="event-location" placeholder="ex. Parcul Corbeanca" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center justify-between">
+                            <span>Locație (Adresă)</span>
+                            <button type="button" onclick="openLocationPickerForCreate()" class="text-brand-primary text-xs normal-case font-bold hover:underline flex items-center gap-1">
+                                <span class="material-icons-round text-sm">location_on</span>
+                                Alege pe hartă
+                            </button>
+                        </label>
+                        <input type="text" id="event-location" placeholder="ex. Parcul Corbeanca sau adresă completă" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
                     </div>
 
                     <div>
@@ -450,17 +456,62 @@
 
     <!-- ================= MODAL: EDIT POST ================= -->
     <div id="modal-edit" class="hidden fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-md h-auto rounded-t-3xl sm:rounded-3xl p-6 flex flex-col shadow-2xl">
+        <div class="bg-white w-full sm:max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl p-6 flex flex-col shadow-2xl overflow-y-auto">
             <h2 class="text-xl font-extrabold text-gray-800 mb-4">Editează Anunțul</h2>
             <form id="edit-form" class="space-y-4">
                 <div>
                     <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Titlu</label>
                     <input type="text" id="edit-title" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
                 </div>
-                <div>
+
+                <!-- Sale-specific fields -->
+                <div id="edit-sale-fields">
                     <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Preț (RON)</label>
                     <input type="number" id="edit-price" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
                 </div>
+
+                <!-- Event-specific fields -->
+                <div id="edit-event-fields" class="hidden space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Dată</label>
+                            <input type="date" id="edit-event-date" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Oră</label>
+                            <input type="time" id="edit-event-time" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center justify-between">
+                            <span>Locație</span>
+                            <button type="button" onclick="openLocationPicker()" class="text-brand-primary text-xs normal-case font-bold hover:underline flex items-center gap-1">
+                                <span class="material-icons-round text-sm">location_on</span>
+                                Alege pe hartă
+                            </button>
+                        </label>
+                        <input type="text" id="edit-event-location" placeholder="ex. Parcul Corbeanca sau adresă completă" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Preț Participare</label>
+                        <div class="flex items-center gap-4 mb-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="edit-event-cost" value="free" id="edit-event-free" class="text-brand-primary focus:ring-brand-primary">
+                                <span class="text-sm font-bold text-gray-700">Gratuit</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="edit-event-cost" value="paid" id="edit-event-paid" class="text-brand-primary focus:ring-brand-primary">
+                                <span class="text-sm font-bold text-gray-700">Cu Plată</span>
+                            </label>
+                        </div>
+                        <div id="edit-event-price-input" class="hidden">
+                            <input type="number" id="edit-event-price-val" placeholder="Preț (RON)" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Descriere</label>
                     <textarea id="edit-desc" rows="3" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-700 focus:outline-none focus:border-brand-primary"></textarea>
@@ -470,6 +521,47 @@
                     <button type="submit" id="btn-update-post" class="bg-blue-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-600">Actualizează</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: LOCATION PICKER ================= -->
+    <div id="modal-location-picker" class="hidden fixed inset-0 z-[80] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
+        <div class="bg-white w-full sm:max-w-2xl h-[80vh] rounded-t-3xl sm:rounded-3xl p-0 flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
+                <h3 class="font-extrabold text-gray-800 text-lg flex items-center gap-2">
+                    <span class="material-icons-round text-brand-primary">location_on</span> Alege Locația
+                </h3>
+                <button onclick="toggleModal('modal-location-picker', false)" class="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+
+            <div class="p-4 bg-gray-50 border-b border-gray-100">
+                <input type="text" id="location-search" placeholder="Caută adresă..." class="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                <p class="text-xs text-gray-400 mt-2">Sau click pe hartă pentru a alege locația</p>
+            </div>
+
+            <div class="flex-1 relative">
+                <iframe
+                    id="location-map-frame"
+                    width="100%"
+                    height="100%"
+                    frameborder="0"
+                    style="border:0"
+                    src="https://maps.google.com/maps?q=Corbeanca,Romania&output=embed&z=14"
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <div class="p-4 bg-white border-t border-gray-100">
+                <div class="mb-3">
+                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Locație Selectată</label>
+                    <input type="text" id="selected-location-display" readonly class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800">
+                </div>
+                <button type="button" onclick="confirmLocationSelection()" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold shadow-lg hover:bg-red-400 transition-colors">
+                    Confirmă Locația
+                </button>
+            </div>
         </div>
     </div>
 

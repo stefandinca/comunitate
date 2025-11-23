@@ -82,7 +82,8 @@ const screens = {
     edit: document.getElementById('modal-edit'),
     comments: document.getElementById('modal-comments'),
     notifications: document.getElementById('modal-notifications'),
-    publicProfile: document.getElementById('modal-public-profile') // NEW
+    publicProfile: document.getElementById('modal-public-profile'),
+    locationPicker: document.getElementById('modal-location-picker')
 };
 
 const feedContainer = document.getElementById('feed-container');
@@ -158,6 +159,16 @@ function toggleModal(modalId, show) {
             if (unsubscribePublicProfilePosts) unsubscribePublicProfilePosts();
         }
     }
+}
+
+// --- SERVICE WORKER CLEANUP ---
+// Unregister any service workers to prevent preload errors
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+            registration.unregister();
+        });
+    });
 }
 
 // --- AUTHENTICATION ---
@@ -848,12 +859,120 @@ window.deletePost = async (id) => {
     }
 };
 
-window.openEditModal = (id, title, price, desc) => {
-    editingPostId = id;
-    document.getElementById('edit-title').value = title;
-    document.getElementById('edit-price').value = price;
-    document.getElementById('edit-desc').value = desc;
-    toggleModal('modal-edit', true);
+window.openEditModal = async (postId) => {
+    editingPostId = postId;
+
+    try {
+        const postRef = getDocPath(COLL_POSTS, postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) {
+            showToast('Postarea nu a fost găsită', 'error');
+            return;
+        }
+
+        const post = postSnap.data();
+
+        // Set common fields
+        document.getElementById('edit-title').value = post.title || '';
+        document.getElementById('edit-desc').value = post.description || '';
+
+        // Show/hide fields based on post type
+        const saleFields = document.getElementById('edit-sale-fields');
+        const eventFields = document.getElementById('edit-event-fields');
+
+        if (post.type === 'event') {
+            // Hide sale fields, show event fields
+            saleFields.classList.add('hidden');
+            eventFields.classList.remove('hidden');
+
+            // Populate event fields
+            document.getElementById('edit-event-date').value = post.eventDate || '';
+            document.getElementById('edit-event-time').value = post.eventTime || '';
+            document.getElementById('edit-event-location').value = post.eventLocation || '';
+
+            // Set price radio buttons
+            if (post.isFree) {
+                document.getElementById('edit-event-free').checked = true;
+                document.getElementById('edit-event-price-input').classList.add('hidden');
+            } else {
+                document.getElementById('edit-event-paid').checked = true;
+                document.getElementById('edit-event-price-input').classList.remove('hidden');
+                document.getElementById('edit-event-price-val').value = post.price || '';
+            }
+
+            // Add event listener for price toggle
+            document.getElementById('edit-event-paid').onclick = () => {
+                document.getElementById('edit-event-price-input').classList.remove('hidden');
+            };
+            document.getElementById('edit-event-free').onclick = () => {
+                document.getElementById('edit-event-price-input').classList.add('hidden');
+            };
+        } else {
+            // Show sale fields, hide event fields
+            saleFields.classList.remove('hidden');
+            eventFields.classList.add('hidden');
+
+            // Populate sale fields
+            document.getElementById('edit-price').value = post.price || '';
+        }
+
+        toggleModal('modal-edit', true);
+    } catch (error) {
+        console.error('Error loading post for edit:', error);
+        showToast('Eroare la încărcare', 'error');
+    }
+};
+
+// Handle edit form submission
+if (editForm) {
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!editingPostId) return;
+
+        const btn = document.getElementById('btn-update-post');
+        btn.disabled = true;
+        btn.innerText = 'Se actualizează...';
+
+        try {
+            const postRef = getDocPath(COLL_POSTS, editingPostId);
+            const postSnap = await getDoc(postRef);
+
+            if (!postSnap.exists()) {
+                showToast('Postarea nu a fost găsită', 'error');
+                return;
+            }
+
+            const post = postSnap.data();
+            const updateData = {
+                title: document.getElementById('edit-title').value,
+                description: document.getElementById('edit-desc').value
+            };
+
+            if (post.type === 'event') {
+                updateData.eventDate = document.getElementById('edit-event-date').value;
+                updateData.eventTime = document.getElementById('edit-event-time').value;
+                updateData.eventLocation = document.getElementById('edit-event-location').value;
+
+                const isPaid = document.getElementById('edit-event-paid').checked;
+                updateData.isFree = !isPaid;
+                updateData.price = isPaid ? document.getElementById('edit-event-price-val').value : 0;
+            } else {
+                updateData.price = document.getElementById('edit-price').value;
+            }
+
+            await updateDoc(postRef, updateData);
+            showToast('Postarea a fost actualizată!');
+            toggleModal('modal-edit', false);
+            editingPostId = null;
+        } catch (error) {
+            console.error('Error updating post:', error);
+            showToast('Eroare la actualizare', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Actualizează';
+        }
+    });
 }
 
 function createPostCard(post) {
@@ -1020,6 +1139,9 @@ function createMyPostCard(post) {
             <p class="text-xs text-gray-400 mt-1 uppercase font-bold">${post.type === 'event' ? 'Eveniment' : 'Vânzare'}</p>
         </div>
         <div class="flex gap-2">
+            <button onclick="openEditModal('${post.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100">
+                <span class="material-icons-round text-sm">edit</span>
+            </button>
             <button onclick="deletePost('${post.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100">
                 <span class="material-icons-round text-sm">delete</span>
             </button>
@@ -1040,6 +1162,108 @@ function showToast(message, type = 'success') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// --- LOCATION PICKER FUNCTIONS ---
+let selectedLocation = '';
+let locationPickerMode = 'edit'; // 'edit' or 'create'
+
+window.openLocationPicker = () => {
+    locationPickerMode = 'edit';
+    // Get current location value from edit form if exists
+    const currentLocation = document.getElementById('edit-event-location').value;
+
+    // Update map if there's a current location
+    if (currentLocation) {
+        const mapFrame = document.getElementById('location-map-frame');
+        mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(currentLocation)}&output=embed&z=15`;
+        document.getElementById('selected-location-display').value = currentLocation;
+        selectedLocation = currentLocation;
+    } else {
+        // Default to Corbeanca
+        document.getElementById('selected-location-display').value = 'Corbeanca, România';
+        selectedLocation = 'Corbeanca, România';
+    }
+
+    toggleModal('modal-location-picker', true);
+};
+
+window.openLocationPickerForCreate = () => {
+    locationPickerMode = 'create';
+    // Get current location value from create form if exists
+    const currentLocation = document.getElementById('event-location').value;
+
+    // Update map if there's a current location
+    if (currentLocation) {
+        const mapFrame = document.getElementById('location-map-frame');
+        mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(currentLocation)}&output=embed&z=15`;
+        document.getElementById('selected-location-display').value = currentLocation;
+        selectedLocation = currentLocation;
+    } else {
+        // Default to Corbeanca
+        document.getElementById('selected-location-display').value = 'Corbeanca, România';
+        selectedLocation = 'Corbeanca, România';
+    }
+
+    toggleModal('modal-location-picker', true);
+};
+
+window.confirmLocationSelection = () => {
+    const location = document.getElementById('selected-location-display').value || selectedLocation;
+
+    if (location) {
+        // Set location in the appropriate form based on mode
+        if (locationPickerMode === 'create') {
+            document.getElementById('event-location').value = location;
+        } else {
+            document.getElementById('edit-event-location').value = location;
+        }
+        showToast('Locație selectată!');
+    }
+
+    toggleModal('modal-location-picker', false);
+};
+
+// Handle search input in location picker
+document.addEventListener('DOMContentLoaded', () => {
+    const locationSearch = document.getElementById('location-search');
+
+    if (locationSearch) {
+        let searchTimeout;
+
+        locationSearch.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+
+            searchTimeout = setTimeout(() => {
+                const searchQuery = e.target.value.trim();
+
+                if (searchQuery.length > 2) {
+                    // Update map with search query
+                    const mapFrame = document.getElementById('location-map-frame');
+                    mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed&z=15`;
+
+                    // Update selected location display
+                    document.getElementById('selected-location-display').value = searchQuery;
+                    selectedLocation = searchQuery;
+                }
+            }, 500); // Debounce for 500ms
+        });
+
+        // Handle Enter key
+        locationSearch.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const searchQuery = e.target.value.trim();
+
+                if (searchQuery) {
+                    const mapFrame = document.getElementById('location-map-frame');
+                    mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed&z=15`;
+                    document.getElementById('selected-location-display').value = searchQuery;
+                    selectedLocation = searchQuery;
+                }
+            }
+        });
+    }
+});
 
 window.toggleModal = toggleModal;
 window.showScreen = showScreen;
