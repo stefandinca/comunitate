@@ -65,10 +65,13 @@ let unsubscribeMyPosts = null;
 let unsubscribeInterested = null;
 let unsubscribeComments = null;
 let unsubscribeNotifs = null;
-let unsubscribePublicProfilePosts = null; // New subscription
+let unsubscribePublicProfilePosts = null;
 let editingPostId = null;
 let currentCommentingPostId = null;
+let currentViewingPostId = null;
 let pendingAvatarBase64 = null;
+let pendingPostImageBase64 = null;
+let pendingEditPostImageBase64 = null;
 let isRegisterMode = false;
 let activePostType = 'sale';
 let activeProfileTab = 'my-posts';
@@ -83,7 +86,8 @@ const screens = {
     comments: document.getElementById('modal-comments'),
     notifications: document.getElementById('modal-notifications'),
     publicProfile: document.getElementById('modal-public-profile'),
-    locationPicker: document.getElementById('modal-location-picker')
+    locationPicker: document.getElementById('modal-location-picker'),
+    postDetails: document.getElementById('modal-post-details')
 };
 
 const feedContainer = document.getElementById('feed-container');
@@ -145,6 +149,10 @@ function toggleModal(modalId, show) {
                 phoneInput.value = userProfile.phone;
             }
             switchPostType('sale');
+            clearCreateImage();
+        }
+        if (modalId === 'modal-edit' && !show) {
+             clearEditImage();
         }
     } else {
         el.classList.add('hidden');
@@ -154,7 +162,6 @@ function toggleModal(modalId, show) {
             if (unsubscribeComments) unsubscribeComments();
             currentCommentingPostId = null;
         }
-        // Cleanup for public profile
         if (modalId === 'modal-public-profile') {
             if (unsubscribePublicProfilePosts) unsubscribePublicProfilePosts();
         }
@@ -162,7 +169,6 @@ function toggleModal(modalId, show) {
 }
 
 // --- SERVICE WORKER CLEANUP ---
-// Unregister any service workers to prevent preload errors
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
         registrations.forEach(registration => {
@@ -204,8 +210,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// ... (Existing auth/login code remains unchanged) ...
-// (Keeping previous auth functions for brevity, they are correct in file context)
+// --- AUTH HANDLERS ---
 window.toggleAuthMode = () => {
     isRegisterMode = !isRegisterMode;
     const extraFields = document.getElementById('register-fields');
@@ -297,6 +302,7 @@ loginForm.addEventListener('submit', async (e) => {
     }
 });
 
+// --- IMAGE UTILS ---
 function compressImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -306,7 +312,7 @@ function compressImage(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 300;
+                const MAX_WIDTH = 600;
                 const scaleSize = MAX_WIDTH / img.width;
                 canvas.width = MAX_WIDTH;
                 canvas.height = img.height * scaleSize;
@@ -320,6 +326,7 @@ function compressImage(file) {
     });
 }
 
+// Image Handlers
 document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('prof-avatar-file');
     if (fileInput) {
@@ -335,7 +342,55 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    const postImageInput = document.getElementById('post-image');
+    if (postImageInput) {
+        postImageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            try {
+                const base64 = await compressImage(file);
+                pendingPostImageBase64 = base64;
+                document.getElementById('post-image-preview').src = base64;
+                document.getElementById('post-image-preview-container').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                showToast("Eroare procesare imagine", "error");
+            }
+        });
+    }
+
+    const editPostImageInput = document.getElementById('edit-post-image');
+    if (editPostImageInput) {
+        editPostImageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            try {
+                const base64 = await compressImage(file);
+                pendingEditPostImageBase64 = base64;
+                document.getElementById('edit-image-preview').src = base64;
+                document.getElementById('edit-image-preview-container').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                showToast("Eroare procesare imagine", "error");
+            }
+        });
+    }
 });
+
+window.clearCreateImage = () => {
+    pendingPostImageBase64 = null;
+    document.getElementById('post-image').value = '';
+    document.getElementById('post-image-preview').src = '';
+    document.getElementById('post-image-preview-container').classList.add('hidden');
+};
+
+window.clearEditImage = () => {
+    pendingEditPostImageBase64 = null;
+    document.getElementById('edit-post-image').value = '';
+    document.getElementById('edit-image-preview').src = '';
+    document.getElementById('edit-image-preview-container').classList.add('hidden');
+};
 
 profileForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -373,6 +428,76 @@ function loadUserProfile() {
     const avatarEl = document.getElementById('profile-display-avatar');
     if (userProfile.avatar) avatarEl.src = userProfile.avatar;
     else avatarEl.src = `https://ui-avatars.com/api/?name=${userProfile.name}&background=random`;
+}
+
+// --- DATA LOADING FUNCTIONS (Restored) ---
+
+function loadPosts() {
+    if (unsubscribePosts) unsubscribePosts();
+    const q = query(getCollectionRef(COLL_POSTS));
+    unsubscribePosts = onSnapshot(q, (snapshot) => {
+        feedContainer.innerHTML = '';
+        const posts = [];
+        snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        if (posts.length === 0) {
+            feedContainer.innerHTML = `<div class="text-center py-10 text-gray-400">Nu sunt postări încă.</div>`;
+            return;
+        }
+        posts.forEach(post => {
+            if (post.type === 'event') {
+                feedContainer.appendChild(createEventCard(post));
+            } else {
+                feedContainer.appendChild(createPostCard(post));
+            }
+        });
+    });
+}
+
+function loadMyPosts() {
+    if (unsubscribeMyPosts) unsubscribeMyPosts();
+    if (!currentUser) return;
+    const q = query(getCollectionRef(COLL_POSTS));
+    unsubscribeMyPosts = onSnapshot(q, (snapshot) => {
+        myPostsContainer.innerHTML = '';
+        const posts = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.uid === currentUser.uid) posts.push({ id: doc.id, ...data });
+        });
+        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        if (posts.length === 0) {
+            myPostsContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">Nu ai publicat nimic încă.</div>`;
+            return;
+        }
+        posts.forEach(post => myPostsContainer.appendChild(createMyPostCard(post)));
+    });
+}
+
+function loadInterestedEvents() {
+    if (unsubscribeInterested) unsubscribeInterested();
+    if (!currentUser) return;
+
+    const q = query(getCollectionRef(COLL_POSTS), where('interestedUsers', 'array-contains', currentUser.uid));
+    const container = document.getElementById('interested-container');
+
+    container.innerHTML = '<div class="text-center py-4"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>';
+
+    unsubscribeInterested = onSnapshot(q, (snapshot) => {
+        container.innerHTML = '';
+        const posts = [];
+        snapshot.forEach(doc => {
+            posts.push({ id: doc.id, ...doc.data() });
+        });
+        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        if (posts.length === 0) {
+            container.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">Nu ai salvat niciun eveniment.</div>`;
+            return;
+        }
+        posts.forEach(post => container.appendChild(createEventCard(post)));
+    });
 }
 
 // --- POST LOGIC ---
@@ -469,7 +594,8 @@ createForm.addEventListener('submit', async (e) => {
             uid: currentUser.uid,
             timestamp: serverTimestamp(),
             type: activePostType,
-            commentCount: 0
+            commentCount: 0,
+            image: pendingPostImageBase64 || null
         };
 
         if (activePostType === 'sale') {
@@ -501,97 +627,38 @@ createForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- PUBLIC PROFILE LOGIC (NEW) ---
-window.viewUserProfile = async (targetUid) => {
-    if (!targetUid) return;
-    
-    // 1. Show Modal & Reset
-    toggleModal('modal-public-profile', true);
-    document.getElementById('public-prof-name').innerText = "Se încarcă...";
-    document.getElementById('public-prof-avatar').src = "";
-    const postsList = document.getElementById('public-prof-posts');
-    postsList.innerHTML = '<div class="text-center py-4 text-gray-400"><span class="material-icons-round animate-spin">refresh</span></div>';
-    const actionsDiv = document.getElementById('public-prof-actions');
-    actionsDiv.innerHTML = '';
+// --- PROFILE TABS ---
+window.switchProfileTab = (tab) => {
+    activeProfileTab = tab;
+    const btnMy = document.getElementById('tab-btn-my');
+    const btnInt = document.getElementById('tab-btn-int');
+    const contMy = document.getElementById('my-posts-container');
+    const contInt = document.getElementById('interested-container');
 
-    try {
-        // 2. Fetch User Info
-        const userRef = getDocPath(COLL_USERS, targetUid);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists()) {
-            const data = userSnap.data();
-            document.getElementById('public-prof-name').innerText = data.name || "Utilizator";
-            const avatarSrc = data.avatar || `https://ui-avatars.com/api/?name=${data.name}&background=random`;
-            document.getElementById('public-prof-avatar').src = avatarSrc;
-
-            // Optional: Show phone/whatsapp button if available
-            if (data.phone) {
-                let cleanPhone = data.phone.replace(/\D/g, ''); 
-                if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1); 
-                if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
-                
-                actionsDiv.innerHTML = `
-                    <a href="https://wa.me/${cleanPhone}" target="_blank" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:bg-green-200 transition-colors">
-                        <span class="material-icons-round text-sm">chat</span> WhatsApp
-                    </a>
-                `;
-            }
-        } else {
-            document.getElementById('public-prof-name').innerText = "Utilizator necunoscut";
-        }
-
-        // 3. Fetch User Posts
-        const q = query(getCollectionRef(COLL_POSTS), where('uid', '==', targetUid));
-        
-        // We unsubscribe from previous public profile listeners to avoid memory leaks or wrong data
-        if (unsubscribePublicProfilePosts) unsubscribePublicProfilePosts();
-
-        unsubscribePublicProfilePosts = onSnapshot(q, (snapshot) => {
-            postsList.innerHTML = '';
-            const posts = [];
-            snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
-            posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-            if (posts.length === 0) {
-                postsList.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">Acest utilizator nu are postări active.</div>';
-                return;
-            }
-
-            posts.forEach(post => {
-                // Use a simplified version of card or reuse createMyPostCard
-                const card = createMyPostCard(post); // This shows "Edit/Delete" which is wrong for public view!
-                // Let's fix that below by making a read-only version
-                
-                const div = document.createElement('div');
-                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm";
-                div.innerHTML = `
-                    <div class="flex-1">
-                        <h4 class="font-bold text-gray-800">${post.title}</h4>
-                        <div class="flex gap-2 mt-1">
-                            <span class="text-xs bg-white px-2 py-0.5 rounded border text-gray-500 uppercase font-bold">${post.type === 'event' ? 'Eveniment' : 'Vânzare'}</span>
-                            <span class="text-xs text-brand-primary font-bold">${post.isFree ? 'Gratuit' : (post.price + ' RON')}</span>
-                        </div>
-                    </div>
-                `;
-                postsList.appendChild(div);
-            });
-        });
-
-    } catch (error) {
-        console.error("Error fetching public profile:", error);
-        showToast("Eroare la încărcarea profilului", "error");
+    if (tab === 'my-posts') {
+        btnMy.classList.replace('text-gray-400', 'text-brand-primary');
+        btnMy.classList.replace('border-transparent', 'border-brand-primary');
+        btnInt.classList.replace('text-brand-primary', 'text-gray-400');
+        btnInt.classList.replace('border-brand-primary', 'border-transparent');
+        contMy.classList.remove('hidden');
+        contInt.classList.add('hidden');
+        loadMyPosts();
+    } else {
+        btnInt.classList.replace('text-gray-400', 'text-brand-primary');
+        btnInt.classList.replace('border-transparent', 'border-brand-primary');
+        btnMy.classList.replace('text-brand-primary', 'text-gray-400');
+        btnMy.classList.replace('border-brand-primary', 'border-transparent');
+        contInt.classList.remove('hidden');
+        contMy.classList.add('hidden');
+        loadInterestedEvents();
     }
-};
+}
 
-// ... (Existing Listeners & Helper Functions) ...
-
-// 1. Listen for my notifications
+// --- COMMENTS & NOTIFICATIONS LOGIC ---
 function listenForNotifications() {
     if (unsubscribeNotifs) unsubscribeNotifs();
     if (!currentUser) return;
 
-    // Ensure we are querying correctly
     const q = query(getCollectionRef(COLL_NOTIF), where('recipientUid', '==', currentUser.uid));
 
     unsubscribeNotifs = onSnapshot(q, (snapshot) => {
@@ -603,8 +670,6 @@ function listenForNotifications() {
 
         const notifs = [];
         snapshot.forEach(doc => notifs.push({ id: doc.id, ...doc.data() }));
-
-        // Sort locally to avoid index issues
         notifs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
         if (notifs.length === 0) {
@@ -640,7 +705,6 @@ function listenForNotifications() {
             notifList.appendChild(div);
         });
 
-        // Update Bell Icon
         const bellBadge = document.getElementById('notif-badge');
         if (bellBadge) {
             if (unreadCount > 0) {
@@ -649,13 +713,9 @@ function listenForNotifications() {
                 bellBadge.classList.add('hidden');
             }
         }
-    }, (error) => {
-        console.error("Notification Listener Error:", error);
-        // Silent fail or toast if critical
     });
 }
 
-// 2. Send Notification on Comment
 window.openComments = (postId) => {
     if (!currentUser) return showToast('Trebuie să fii autentificat!', 'error');
     currentCommentingPostId = postId;
@@ -712,7 +772,6 @@ commentForm.addEventListener('submit', async (e) => {
     input.value = '';
 
     try {
-        // 1. Add Comment
         await addDoc(getCollectionRef(COLL_COMMENTS), {
             postId: currentCommentingPostId,
             text: text,
@@ -722,20 +781,14 @@ commentForm.addEventListener('submit', async (e) => {
             timestamp: serverTimestamp()
         });
 
-        // 2. Increment Count
         const postRef = getDocPath(COLL_POSTS, currentCommentingPostId);
         await updateDoc(postRef, {
             commentCount: increment(1)
         });
 
-        // 3. Send Notification
         const postSnap = await getDoc(postRef);
         if (postSnap.exists()) {
             const postData = postSnap.data();
-
-            // FOR TESTING: Removed 'if (postData.uid !== currentUser.uid)' so you can see your own notifs
-            // In production, uncomment next line
-            // if (postData.uid !== currentUser.uid) {
             await addDoc(getCollectionRef(COLL_NOTIF), {
                 recipientUid: postData.uid,
                 senderName: userProfile?.name || 'Cineva',
@@ -745,7 +798,6 @@ commentForm.addEventListener('submit', async (e) => {
                 read: false,
                 timestamp: serverTimestamp()
             });
-            // }
         }
 
     } catch (error) {
@@ -753,176 +805,6 @@ commentForm.addEventListener('submit', async (e) => {
         showToast('Eroare la trimitere.', 'error');
     }
 });
-
-// ... (Tabs logic unchanged) ...
-window.switchProfileTab = (tab) => {
-    activeProfileTab = tab;
-    const btnMy = document.getElementById('tab-btn-my');
-    const btnInt = document.getElementById('tab-btn-int');
-    const contMy = document.getElementById('my-posts-container');
-    const contInt = document.getElementById('interested-container');
-
-    if (tab === 'my-posts') {
-        btnMy.classList.replace('text-gray-400', 'text-brand-primary');
-        btnMy.classList.replace('border-transparent', 'border-brand-primary');
-        btnInt.classList.replace('text-brand-primary', 'text-gray-400');
-        btnInt.classList.replace('border-brand-primary', 'border-transparent');
-        contMy.classList.remove('hidden');
-        contInt.classList.add('hidden');
-        loadMyPosts();
-    } else {
-        btnInt.classList.replace('text-gray-400', 'text-brand-primary');
-        btnInt.classList.replace('border-transparent', 'border-brand-primary');
-        btnMy.classList.replace('text-brand-primary', 'text-gray-400');
-        btnMy.classList.replace('border-brand-primary', 'border-transparent');
-        contInt.classList.remove('hidden');
-        contMy.classList.add('hidden');
-        loadInterestedEvents();
-    }
-}
-
-function loadInterestedEvents() {
-    if (unsubscribeInterested) unsubscribeInterested();
-    if (!currentUser) return;
-
-    const q = query(getCollectionRef(COLL_POSTS), where('interestedUsers', 'array-contains', currentUser.uid));
-    const container = document.getElementById('interested-container');
-
-    container.innerHTML = '<div class="text-center py-4"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>';
-
-    unsubscribeInterested = onSnapshot(q, (snapshot) => {
-        container.innerHTML = '';
-        const posts = [];
-        snapshot.forEach(doc => {
-            posts.push({ id: doc.id, ...doc.data() });
-        });
-        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-        if (posts.length === 0) {
-            container.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">Nu ai salvat niciun eveniment.</div>`;
-            return;
-        }
-        posts.forEach(post => container.appendChild(createEventCard(post)));
-    });
-}
-
-function loadPosts() {
-    if (unsubscribePosts) unsubscribePosts();
-    const q = query(getCollectionRef(COLL_POSTS));
-    unsubscribePosts = onSnapshot(q, (snapshot) => {
-        feedContainer.innerHTML = '';
-        const posts = [];
-        snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
-        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-        if (posts.length === 0) {
-            feedContainer.innerHTML = `<div class="text-center py-10 text-gray-400">Nu sunt postări încă.</div>`;
-            return;
-        }
-        posts.forEach(post => {
-            if (post.type === 'event') {
-                feedContainer.appendChild(createEventCard(post));
-            } else {
-                feedContainer.appendChild(createPostCard(post));
-            }
-        });
-    });
-}
-
-function loadMyPosts() {
-    if (unsubscribeMyPosts) unsubscribeMyPosts();
-    if (!currentUser) return;
-    const q = query(getCollectionRef(COLL_POSTS));
-    unsubscribeMyPosts = onSnapshot(q, (snapshot) => {
-        myPostsContainer.innerHTML = '';
-        const posts = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.uid === currentUser.uid) posts.push({ id: doc.id, ...data });
-        });
-        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-        if (posts.length === 0) {
-            myPostsContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-sm">Nu ai publicat nimic încă.</div>`;
-            return;
-        }
-        posts.forEach(post => myPostsContainer.appendChild(createMyPostCard(post)));
-    });
-}
-
-window.deletePost = async (id) => {
-    if (!confirm('Sigur vrei să ștergi?')) return;
-    try {
-        await deleteDoc(getDocPath(COLL_POSTS, id));
-        showToast('Șters.');
-    } catch (e) {
-        showToast('Eroare', 'error');
-    }
-};
-
-window.openEditModal = async (postId) => {
-    editingPostId = postId;
-
-    try {
-        const postRef = getDocPath(COLL_POSTS, postId);
-        const postSnap = await getDoc(postRef);
-
-        if (!postSnap.exists()) {
-            showToast('Postarea nu a fost găsită', 'error');
-            return;
-        }
-
-        const post = postSnap.data();
-
-        // Set common fields
-        document.getElementById('edit-title').value = post.title || '';
-        document.getElementById('edit-desc').value = post.description || '';
-
-        // Show/hide fields based on post type
-        const saleFields = document.getElementById('edit-sale-fields');
-        const eventFields = document.getElementById('edit-event-fields');
-
-        if (post.type === 'event') {
-            // Hide sale fields, show event fields
-            saleFields.classList.add('hidden');
-            eventFields.classList.remove('hidden');
-
-            // Populate event fields
-            document.getElementById('edit-event-date').value = post.eventDate || '';
-            document.getElementById('edit-event-time').value = post.eventTime || '';
-            document.getElementById('edit-event-location').value = post.eventLocation || '';
-
-            // Set price radio buttons
-            if (post.isFree) {
-                document.getElementById('edit-event-free').checked = true;
-                document.getElementById('edit-event-price-input').classList.add('hidden');
-            } else {
-                document.getElementById('edit-event-paid').checked = true;
-                document.getElementById('edit-event-price-input').classList.remove('hidden');
-                document.getElementById('edit-event-price-val').value = post.price || '';
-            }
-
-            // Add event listener for price toggle
-            document.getElementById('edit-event-paid').onclick = () => {
-                document.getElementById('edit-event-price-input').classList.remove('hidden');
-            };
-            document.getElementById('edit-event-free').onclick = () => {
-                document.getElementById('edit-event-price-input').classList.add('hidden');
-            };
-        } else {
-            // Show sale fields, hide event fields
-            saleFields.classList.remove('hidden');
-            eventFields.classList.add('hidden');
-
-            // Populate sale fields
-            document.getElementById('edit-price').value = post.price || '';
-        }
-
-        toggleModal('modal-edit', true);
-    } catch (error) {
-        console.error('Error loading post for edit:', error);
-        showToast('Eroare la încărcare', 'error');
-    }
-};
 
 // Handle edit form submission
 if (editForm) {
@@ -948,6 +830,10 @@ if (editForm) {
                 title: document.getElementById('edit-title').value,
                 description: document.getElementById('edit-desc').value
             };
+            
+            if (pendingEditPostImageBase64) {
+                updateData.image = pendingEditPostImageBase64;
+            }
 
             if (post.type === 'event') {
                 updateData.eventDate = document.getElementById('edit-event-date').value;
@@ -975,6 +861,148 @@ if (editForm) {
     });
 }
 
+window.openEditModal = async (postId) => {
+    editingPostId = postId;
+    clearEditImage(); 
+
+    try {
+        const postRef = getDocPath(COLL_POSTS, postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) {
+            showToast('Postarea nu a fost găsită', 'error');
+            return;
+        }
+
+        const post = postSnap.data();
+
+        document.getElementById('edit-title').value = post.title || '';
+        document.getElementById('edit-desc').value = post.description || '';
+        
+        if (post.image) {
+            document.getElementById('edit-image-preview').src = post.image;
+            document.getElementById('edit-image-preview-container').classList.remove('hidden');
+        }
+
+        const saleFields = document.getElementById('edit-sale-fields');
+        const eventFields = document.getElementById('edit-event-fields');
+
+        if (post.type === 'event') {
+            saleFields.classList.add('hidden');
+            eventFields.classList.remove('hidden');
+
+            document.getElementById('edit-event-date').value = post.eventDate || '';
+            document.getElementById('edit-event-time').value = post.eventTime || '';
+            document.getElementById('edit-event-location').value = post.eventLocation || '';
+
+            if (post.isFree) {
+                document.getElementById('edit-event-free').checked = true;
+                document.getElementById('edit-event-price-input').classList.add('hidden');
+            } else {
+                document.getElementById('edit-event-paid').checked = true;
+                document.getElementById('edit-event-price-input').classList.remove('hidden');
+                document.getElementById('edit-event-price-val').value = post.price || '';
+            }
+            
+            document.getElementById('edit-event-paid').onclick = () => {
+                document.getElementById('edit-event-price-input').classList.remove('hidden');
+            };
+            document.getElementById('edit-event-free').onclick = () => {
+                document.getElementById('edit-event-price-input').classList.add('hidden');
+            };
+
+        } else {
+            saleFields.classList.remove('hidden');
+            eventFields.classList.add('hidden');
+            document.getElementById('edit-price').value = post.price || '';
+        }
+
+        toggleModal('modal-edit', true);
+    } catch (error) {
+        console.error('Error loading post for edit:', error);
+        showToast('Eroare la încărcare', 'error');
+    }
+};
+
+window.viewUserProfile = async (targetUid) => {
+    if (!targetUid) return;
+    
+    toggleModal('modal-public-profile', true);
+    document.getElementById('public-prof-name').innerText = "Se încarcă...";
+    document.getElementById('public-prof-avatar').src = "";
+    const postsList = document.getElementById('public-prof-posts');
+    postsList.innerHTML = '<div class="text-center py-4 text-gray-400"><span class="material-icons-round animate-spin">refresh</span></div>';
+    const actionsDiv = document.getElementById('public-prof-actions');
+    actionsDiv.innerHTML = '';
+
+    try {
+        const userRef = getDocPath(COLL_USERS, targetUid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+            const data = userSnap.data();
+            document.getElementById('public-prof-name').innerText = data.name || "Utilizator";
+            const avatarSrc = data.avatar || `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+            document.getElementById('public-prof-avatar').src = avatarSrc;
+
+            if (data.phone) {
+                let cleanPhone = data.phone.replace(/\D/g, ''); 
+                if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1); 
+                if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
+                
+                actionsDiv.innerHTML = `
+                    <a href="https://wa.me/${cleanPhone}" target="_blank" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:bg-green-200 transition-colors">
+                        <span class="material-icons-round text-sm">chat</span> WhatsApp
+                    </a>
+                `;
+            }
+        } else {
+            document.getElementById('public-prof-name').innerText = "Utilizator necunoscut";
+        }
+
+        const q = query(getCollectionRef(COLL_POSTS), where('uid', '==', targetUid));
+        
+        if (unsubscribePublicProfilePosts) unsubscribePublicProfilePosts();
+
+        unsubscribePublicProfilePosts = onSnapshot(q, (snapshot) => {
+            postsList.innerHTML = '';
+            const posts = [];
+            snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+            posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            if (posts.length === 0) {
+                postsList.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">Acest utilizator nu are postări active.</div>';
+                return;
+            }
+
+            posts.forEach(post => {
+                const div = document.createElement('div');
+                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm";
+                
+                const priceInfo = post.type === 'event' 
+                    ? (post.isFree ? 'Gratuit' : `${post.price} RON`) 
+                    : `${post.price} RON`;
+
+                div.innerHTML = `
+                    <div class="flex-1">
+                        <h4 class="font-bold text-gray-800">${post.title}</h4>
+                        <div class="flex gap-2 mt-1">
+                            <span class="text-xs bg-white px-2 py-0.5 rounded border text-gray-500 uppercase font-bold">${post.type === 'event' ? 'Eveniment' : 'Vânzare'}</span>
+                            <span class="text-xs text-brand-primary font-bold">${priceInfo}</span>
+                        </div>
+                    </div>
+                `;
+                postsList.appendChild(div);
+            });
+        });
+
+    } catch (error) {
+        console.error("Error fetching public profile:", error);
+        showToast("Eroare la încărcarea profilului", "error");
+    }
+};
+
+// --- CARD CREATION FUNCTIONS ---
 function createPostCard(post) {
     const categoryConfig = {
         'kids': { icon: 'child_friendly', color: 'bg-blue-100 text-blue-600' },
@@ -985,7 +1013,7 @@ function createPostCard(post) {
     };
     const conf = categoryConfig[post.category] || categoryConfig['other'];
     const article = document.createElement('article');
-    article.className = "bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4 animate-fade-in";
+    article.className = "bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-lg transition-shadow";
 
     const date = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleDateString('ro-RO') : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
@@ -1003,29 +1031,34 @@ function createPostCard(post) {
             <span>Vânzare</span>
         </div>
         <div class="p-4">
-            <div class="flex items-center gap-3 mb-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors" onclick="viewUserProfile('${post.uid}')">
+            <div class="flex items-center gap-3 mb-3" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
                 <img src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover bg-gray-100">
                 <div>
                     <p class="font-bold text-sm text-gray-800 hover:underline">${post.authorName}</p>
                     <p class="text-xs text-gray-400">${date}</p>
                 </div>
             </div>
+            ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-3 border border-gray-100">` : ''}
             <h3 class="font-bold text-lg mb-1 leading-tight">${post.title}</h3>
             <p class="text-gray-500 text-sm mb-3 line-clamp-3">${post.description}</p>
             <div class="flex justify-between items-center mt-4">
                 <span class="font-extrabold text-xl text-brand-primary">${post.price} RON</span>
                 <div class="flex gap-2">
-                    <button onclick="openComments('${post.id}')" class="bg-gray-50 text-gray-600 px-3 py-2 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-gray-100">
+                    <button onclick="event.stopPropagation(); openComments('${post.id}')" class="bg-gray-50 text-gray-600 px-3 py-2 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-gray-100">
                         <span class="material-icons-round text-sm">chat_bubble_outline</span>
                         ${commentCount > 0 ? commentCount : ''}
                     </button>
-                    <a href="${waHref}" target="${cleanPhone ? '_blank' : ''}" class="${waStyle} px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-colors">
+                    <a href="${waHref}" target="${cleanPhone ? '_blank' : ''}" onclick="event.stopPropagation()" class="${waStyle} px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-colors">
                         <span class="material-icons-round text-sm">chat</span> WhatsApp
                     </a>
                 </div>
             </div>
         </div>
     `;
+
+    // Add click handler to open details
+    article.onclick = () => openPostDetails(post.id);
+
     return article;
 }
 
@@ -1039,7 +1072,7 @@ function createEventCard(post) {
     };
     const conf = categoryConfig[post.category] || categoryConfig['other'];
     const article = document.createElement('article');
-    article.className = "bg-white rounded-3xl shadow-sm border border-purple-100 overflow-hidden mb-4 animate-fade-in";
+    article.className = "bg-white rounded-3xl shadow-sm border border-purple-100 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-lg transition-shadow";
 
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
     const interestedCount = post.interestedCount || 0;
@@ -1053,7 +1086,6 @@ function createEventCard(post) {
     const btnIcon = isInterested ? "favorite" : "favorite_border";
 
     const location = post.eventLocation || 'Corbeanca';
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
 
     article.innerHTML = `
         <div class="bg-purple-50 px-4 py-2 flex items-center justify-between text-sm font-bold text-purple-700">
@@ -1064,15 +1096,16 @@ function createEventCard(post) {
             <span class="text-xs bg-white px-2 py-0.5 rounded-md border border-purple-100">${priceDisplay}</span>
         </div>
         <div class="p-4">
-            <div class="flex items-center gap-3 mb-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors" onclick="viewUserProfile('${post.uid}')">
+            <div class="flex items-center gap-3 mb-3" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
                 <img src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover bg-gray-100">
                 <div>
                     <p class="font-bold text-sm text-gray-800 hover:underline">${post.authorName}</p>
                     <p class="text-xs text-gray-400">Organizator</p>
                 </div>
             </div>
+            ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-3 border border-gray-100">` : ''}
             <h3 class="font-bold text-lg mb-1 leading-tight">${post.title}</h3>
-            
+
             <div class="flex gap-4 my-3">
                 <div class="flex items-center gap-2 text-gray-700 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 w-full">
                     <span class="material-icons-round text-purple-400">calendar_today</span>
@@ -1083,36 +1116,16 @@ function createEventCard(post) {
                 </div>
             </div>
 
-            <!-- Location & Map Button -->
-            <div class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 mb-3">
-                <div class="flex items-center gap-2 text-gray-700 overflow-hidden">
-                    <span class="material-icons-round text-red-400">location_on</span>
-                    <p class="text-sm font-bold truncate pr-2">${location}</p>
-                </div>
-                <a href="${mapUrl}" target="_blank" class="flex-shrink-0 bg-white text-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-blue-50 transition-colors shadow-sm">
-                    <span class="material-icons-round text-sm">directions</span>
-                    Indicații
-                </a>
-            </div>
-
-            <!-- Map Preview Iframe -->
-            <div class="rounded-xl overflow-hidden border border-gray-100 mb-4">
-                <iframe 
-                    width="100%" 
-                    height="150" 
-                    frameborder="0" 
-                    style="border:0" 
-                    src="https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed"
-                    loading="lazy"
-                    allowfullscreen>
-                </iframe>
+            <div class="flex items-center gap-2 text-gray-700 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 mb-3">
+                <span class="material-icons-round text-red-400">location_on</span>
+                <p class="text-sm font-bold truncate">${location}</p>
             </div>
 
             <p class="text-gray-500 text-sm mb-4 line-clamp-3">${post.description}</p>
-            
+
             <div class="flex justify-between items-center mt-2 border-t border-gray-50 pt-3">
                 <div class="flex items-center gap-1 text-xs text-gray-500 font-bold">
-                    <button onclick="openComments('${post.id}')" class="flex items-center gap-1 hover:text-brand-primary transition-colors p-1">
+                    <button onclick="event.stopPropagation(); openComments('${post.id}')" class="flex items-center gap-1 hover:text-brand-primary transition-colors p-1">
                         <span class="material-icons-round text-sm">chat_bubble_outline</span>
                         ${commentCount > 0 ? commentCount : ''}
                     </button>
@@ -1120,15 +1133,194 @@ function createEventCard(post) {
                     <span class="material-icons-round text-sm text-pink-400">group</span>
                     <span id="interest-count-${post.id}">${interestedCount}</span>
                 </div>
-                <button id="interest-btn-${post.id}" onclick="toggleInterest('${post.id}')" class="${btnClass} px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-200">
+                <button id="interest-btn-${post.id}" onclick="event.stopPropagation(); toggleInterest('${post.id}')" class="${btnClass} px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-200">
                     <span class="material-icons-round text-sm">${btnIcon}</span>
                     Interes
                 </button>
             </div>
         </div>
     `;
+
+    // Add click handler to open details
+    article.onclick = () => openPostDetails(post.id);
+
     return article;
 }
+
+// --- POST DETAILS MODAL ---
+window.openPostDetails = async (postId) => {
+    if (!postId) return;
+    currentViewingPostId = postId;
+
+    try {
+        const postRef = getDocPath(COLL_POSTS, postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) {
+            showToast('Postarea nu a fost găsită', 'error');
+            return;
+        }
+
+        const post = { id: postSnap.id, ...postSnap.data() };
+        const content = document.getElementById('post-detail-content');
+        const title = document.getElementById('post-detail-title');
+
+        title.textContent = post.title;
+
+        if (post.type === 'event') {
+            renderEventDetails(post, content);
+        } else {
+            renderSaleDetails(post, content);
+        }
+
+        toggleModal('modal-post-details', true);
+    } catch (error) {
+        console.error('Error loading post details:', error);
+        showToast('Eroare la încărcare', 'error');
+    }
+};
+
+function renderSaleDetails(post, container) {
+    const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
+    const date = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+
+    let cleanPhone = (post.authorPhone || '').replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+    if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
+    const waHref = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Salut, pt anunțul: ' + post.title)}` : 'javascript:void(0)';
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            <!-- Author Info -->
+            <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-xl transition-colors" onclick="viewUserProfile('${post.uid}')">
+                <img src="${avatarSrc}" class="w-12 h-12 rounded-full object-cover bg-gray-100 border-2 border-gray-100">
+                <div>
+                    <p class="font-bold text-gray-800">${post.authorName}</p>
+                    <p class="text-xs text-gray-400">${date}</p>
+                </div>
+            </div>
+
+            ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
+
+            <!-- Price -->
+            <div class="bg-brand-primary bg-opacity-10 p-4 rounded-2xl border-2 border-brand-primary">
+                <p class="text-xs font-bold text-gray-500 uppercase mb-1">Preț</p>
+                <p class="text-3xl font-extrabold text-brand-primary">${post.price} RON</p>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase mb-2">Descriere</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.description}</p>
+            </div>
+
+            <!-- Contact Button -->
+            ${cleanPhone ? `
+            <a href="${waHref}" target="_blank" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2 hover:bg-green-600 transition-colors shadow-lg">
+                <span class="material-icons-round">chat</span>
+                Contactează pe WhatsApp
+            </a>
+            ` : ''}
+        </div>
+    `;
+}
+
+function renderEventDetails(post, container) {
+    const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
+    const interestedCount = post.interestedCount || 0;
+    const isInterested = (post.interestedUsers || []).includes(currentUser?.uid);
+
+    const eventDateObj = new Date(post.eventDate);
+    const dateStr = eventDateObj.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const priceDisplay = post.isFree ? "Gratuit" : `${post.price} RON`;
+    const location = post.eventLocation || 'Corbeanca';
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+    const btnClass = isInterested ? "bg-purple-600 text-white" : "bg-purple-100 text-purple-700";
+    const btnIcon = isInterested ? "favorite" : "favorite_border";
+    const btnText = isInterested ? "Interesat" : "Marchează Interes";
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            <!-- Author Info -->
+            <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-xl transition-colors" onclick="viewUserProfile('${post.uid}')">
+                <img src="${avatarSrc}" class="w-12 h-12 rounded-full object-cover bg-gray-100 border-2 border-purple-100">
+                <div>
+                    <p class="font-bold text-gray-800">${post.authorName}</p>
+                    <p class="text-xs text-gray-400">Organizator</p>
+                </div>
+            </div>
+
+            ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
+
+            <!-- Date & Time -->
+            <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
+                <div class="flex items-center gap-3">
+                    <span class="material-icons-round text-purple-600 text-3xl">calendar_today</span>
+                    <div>
+                        <p class="text-xs font-bold text-purple-600 uppercase">Când?</p>
+                        <p class="text-lg font-bold text-gray-800 capitalize">${dateStr}</p>
+                        <p class="text-sm font-bold text-gray-600">Ora: ${post.eventTime}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location with Map -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="material-icons-round text-red-500">location_on</span>
+                        <p class="font-bold text-gray-800">${location}</p>
+                    </div>
+                    <a href="${mapUrl}" target="_blank" class="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-blue-200 transition-colors">
+                        <span class="material-icons-round text-sm">directions</span>
+                        Indicații
+                    </a>
+                </div>
+                <div class="rounded-2xl overflow-hidden border-2 border-gray-200">
+                    <iframe
+                        width="100%"
+                        height="250"
+                        frameborder="0"
+                        style="border:0"
+                        src="https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed&z=15"
+                        loading="lazy"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+
+            <!-- Price -->
+            <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
+                <p class="text-xs font-bold text-purple-600 uppercase mb-1">Preț Participare</p>
+                <p class="text-2xl font-extrabold text-purple-600">${priceDisplay}</p>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase mb-2">Descriere</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.description}</p>
+            </div>
+
+            <!-- Interest Button -->
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="material-icons-round text-pink-400">group</span>
+                    <span class="font-bold">${interestedCount} persoane interesate</span>
+                </div>
+                <button onclick="toggleInterest('${post.id}')" class="${btnClass} px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg">
+                    <span class="material-icons-round">${btnIcon}</span>
+                    ${btnText}
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+window.openCommentsFromDetail = () => {
+    if (currentViewingPostId) {
+        openComments(currentViewingPostId);
+    }
+};
 
 function createMyPostCard(post) {
     const div = document.createElement('div');
@@ -1150,6 +1342,16 @@ function createMyPostCard(post) {
     return div;
 }
 
+window.deletePost = async (id) => {
+    if (!confirm('Sigur vrei să ștergi?')) return;
+    try {
+        await deleteDoc(getDocPath(COLL_POSTS, id));
+        showToast('Șters.');
+    } catch (e) {
+        showToast('Eroare', 'error');
+    }
+};
+
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     const bg = type === 'success' ? 'bg-gray-800' : 'bg-red-500';
@@ -1165,21 +1367,18 @@ function showToast(message, type = 'success') {
 
 // --- LOCATION PICKER FUNCTIONS ---
 let selectedLocation = '';
-let locationPickerMode = 'edit'; // 'edit' or 'create'
+let locationPickerMode = 'edit'; 
 
 window.openLocationPicker = () => {
     locationPickerMode = 'edit';
-    // Get current location value from edit form if exists
     const currentLocation = document.getElementById('edit-event-location').value;
 
-    // Update map if there's a current location
     if (currentLocation) {
         const mapFrame = document.getElementById('location-map-frame');
         mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(currentLocation)}&output=embed&z=15`;
         document.getElementById('selected-location-display').value = currentLocation;
         selectedLocation = currentLocation;
     } else {
-        // Default to Corbeanca
         document.getElementById('selected-location-display').value = 'Corbeanca, România';
         selectedLocation = 'Corbeanca, România';
     }
@@ -1189,17 +1388,14 @@ window.openLocationPicker = () => {
 
 window.openLocationPickerForCreate = () => {
     locationPickerMode = 'create';
-    // Get current location value from create form if exists
     const currentLocation = document.getElementById('event-location').value;
 
-    // Update map if there's a current location
     if (currentLocation) {
         const mapFrame = document.getElementById('location-map-frame');
         mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(currentLocation)}&output=embed&z=15`;
         document.getElementById('selected-location-display').value = currentLocation;
         selectedLocation = currentLocation;
     } else {
-        // Default to Corbeanca
         document.getElementById('selected-location-display').value = 'Corbeanca, România';
         selectedLocation = 'Corbeanca, România';
     }
@@ -1211,7 +1407,6 @@ window.confirmLocationSelection = () => {
     const location = document.getElementById('selected-location-display').value || selectedLocation;
 
     if (location) {
-        // Set location in the appropriate form based on mode
         if (locationPickerMode === 'create') {
             document.getElementById('event-location').value = location;
         } else {
@@ -1223,7 +1418,6 @@ window.confirmLocationSelection = () => {
     toggleModal('modal-location-picker', false);
 };
 
-// Handle search input in location picker
 document.addEventListener('DOMContentLoaded', () => {
     const locationSearch = document.getElementById('location-search');
 
@@ -1237,18 +1431,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const searchQuery = e.target.value.trim();
 
                 if (searchQuery.length > 2) {
-                    // Update map with search query
                     const mapFrame = document.getElementById('location-map-frame');
                     mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed&z=15`;
 
-                    // Update selected location display
                     document.getElementById('selected-location-display').value = searchQuery;
                     selectedLocation = searchQuery;
                 }
-            }, 500); // Debounce for 500ms
+            }, 500); 
         });
 
-        // Handle Enter key
         locationSearch.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
