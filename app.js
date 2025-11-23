@@ -65,6 +65,7 @@ let unsubscribeMyPosts = null;
 let unsubscribeInterested = null;
 let unsubscribeComments = null;
 let unsubscribeNotifs = null;
+let unsubscribePublicProfilePosts = null; // New subscription
 let editingPostId = null;
 let currentCommentingPostId = null;
 let pendingAvatarBase64 = null;
@@ -80,7 +81,8 @@ const screens = {
     create: document.getElementById('modal-create'),
     edit: document.getElementById('modal-edit'),
     comments: document.getElementById('modal-comments'),
-    notifications: document.getElementById('modal-notifications')
+    notifications: document.getElementById('modal-notifications'),
+    publicProfile: document.getElementById('modal-public-profile') // NEW
 };
 
 const feedContainer = document.getElementById('feed-container');
@@ -151,6 +153,10 @@ function toggleModal(modalId, show) {
             if (unsubscribeComments) unsubscribeComments();
             currentCommentingPostId = null;
         }
+        // Cleanup for public profile
+        if (modalId === 'modal-public-profile') {
+            if (unsubscribePublicProfilePosts) unsubscribePublicProfilePosts();
+        }
     }
 }
 
@@ -187,6 +193,8 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// ... (Existing auth/login code remains unchanged) ...
+// (Keeping previous auth functions for brevity, they are correct in file context)
 window.toggleAuthMode = () => {
     isRegisterMode = !isRegisterMode;
     const extraFields = document.getElementById('register-fields');
@@ -278,7 +286,6 @@ loginForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- IMAGE UTILS ---
 function compressImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -357,7 +364,7 @@ function loadUserProfile() {
     else avatarEl.src = `https://ui-avatars.com/api/?name=${userProfile.name}&background=random`;
 }
 
-// --- POST LOGIC ---
+// ... (Post logic remains same) ...
 window.switchPostType = (type) => {
     activePostType = type;
     const saleBtn = document.getElementById('type-sale-btn');
@@ -482,7 +489,90 @@ createForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- COMMENTS & NOTIFICATIONS LOGIC ---
+// --- PUBLIC PROFILE LOGIC (NEW) ---
+window.viewUserProfile = async (targetUid) => {
+    if (!targetUid) return;
+    
+    // 1. Show Modal & Reset
+    toggleModal('modal-public-profile', true);
+    document.getElementById('public-prof-name').innerText = "Se încarcă...";
+    document.getElementById('public-prof-avatar').src = "";
+    const postsList = document.getElementById('public-prof-posts');
+    postsList.innerHTML = '<div class="text-center py-4 text-gray-400"><span class="material-icons-round animate-spin">refresh</span></div>';
+    const actionsDiv = document.getElementById('public-prof-actions');
+    actionsDiv.innerHTML = '';
+
+    try {
+        // 2. Fetch User Info
+        const userRef = getDocPath(COLL_USERS, targetUid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+            const data = userSnap.data();
+            document.getElementById('public-prof-name').innerText = data.name || "Utilizator";
+            const avatarSrc = data.avatar || `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+            document.getElementById('public-prof-avatar').src = avatarSrc;
+
+            // Optional: Show phone/whatsapp button if available
+            if (data.phone) {
+                let cleanPhone = data.phone.replace(/\D/g, ''); 
+                if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1); 
+                if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
+                
+                actionsDiv.innerHTML = `
+                    <a href="https://wa.me/${cleanPhone}" target="_blank" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:bg-green-200 transition-colors">
+                        <span class="material-icons-round text-sm">chat</span> WhatsApp
+                    </a>
+                `;
+            }
+        } else {
+            document.getElementById('public-prof-name').innerText = "Utilizator necunoscut";
+        }
+
+        // 3. Fetch User Posts
+        const q = query(getCollectionRef(COLL_POSTS), where('uid', '==', targetUid));
+        
+        // We unsubscribe from previous public profile listeners to avoid memory leaks or wrong data
+        if (unsubscribePublicProfilePosts) unsubscribePublicProfilePosts();
+
+        unsubscribePublicProfilePosts = onSnapshot(q, (snapshot) => {
+            postsList.innerHTML = '';
+            const posts = [];
+            snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+            posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            if (posts.length === 0) {
+                postsList.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">Acest utilizator nu are postări active.</div>';
+                return;
+            }
+
+            posts.forEach(post => {
+                // Use a simplified version of card or reuse createMyPostCard
+                const card = createMyPostCard(post); // This shows "Edit/Delete" which is wrong for public view!
+                // Let's fix that below by making a read-only version
+                
+                const div = document.createElement('div');
+                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm";
+                div.innerHTML = `
+                    <div class="flex-1">
+                        <h4 class="font-bold text-gray-800">${post.title}</h4>
+                        <div class="flex gap-2 mt-1">
+                            <span class="text-xs bg-white px-2 py-0.5 rounded border text-gray-500 uppercase font-bold">${post.type === 'event' ? 'Eveniment' : 'Vânzare'}</span>
+                            <span class="text-xs text-brand-primary font-bold">${post.isFree ? 'Gratuit' : (post.price + ' RON')}</span>
+                        </div>
+                    </div>
+                `;
+                postsList.appendChild(div);
+            });
+        });
+
+    } catch (error) {
+        console.error("Error fetching public profile:", error);
+        showToast("Eroare la încărcarea profilului", "error");
+    }
+};
+
+// ... (Existing Listeners & Helper Functions) ...
 
 // 1. Listen for my notifications
 function listenForNotifications() {
@@ -586,10 +676,10 @@ window.openComments = (postId) => {
             const avatar = comment.authorAvatar || `https://ui-avatars.com/api/?name=${comment.authorName}&background=random`;
 
             div.innerHTML = `
-                <img src="${avatar}" class="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-100">
+                <img src="${avatar}" class="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-100 cursor-pointer hover:opacity-80" onclick="viewUserProfile('${comment.uid}')">
                 <div class="flex-1">
                     <div class="bg-gray-100 rounded-2xl rounded-tl-none px-4 py-2 inline-block max-w-[90%] ${isMe ? 'bg-blue-50 text-blue-900' : 'text-gray-800'}">
-                        <p class="text-[10px] font-bold text-gray-500 mb-0.5">${comment.authorName}</p>
+                        <p class="text-[10px] font-bold text-gray-500 mb-0.5 cursor-pointer hover:underline" onclick="viewUserProfile('${comment.uid}')">${comment.authorName}</p>
                         <p class="text-sm leading-relaxed">${comment.text}</p>
                     </div>
                     <p class="text-[10px] text-gray-300 mt-1 ml-2">${new Date(comment.timestamp?.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -652,7 +742,7 @@ commentForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- PROFILE TABS ---
+// ... (Tabs logic unchanged) ...
 window.switchProfileTab = (tab) => {
     activeProfileTab = tab;
     const btnMy = document.getElementById('tab-btn-my');
@@ -793,10 +883,10 @@ function createPostCard(post) {
             <span>Vânzare</span>
         </div>
         <div class="p-4">
-            <div class="flex items-center gap-3 mb-3">
+            <div class="flex items-center gap-3 mb-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors" onclick="viewUserProfile('${post.uid}')">
                 <img src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover bg-gray-100">
                 <div>
-                    <p class="font-bold text-sm text-gray-800">${post.authorName}</p>
+                    <p class="font-bold text-sm text-gray-800 hover:underline">${post.authorName}</p>
                     <p class="text-xs text-gray-400">${date}</p>
                 </div>
             </div>
@@ -851,10 +941,10 @@ function createEventCard(post) {
             <span class="text-xs bg-white px-2 py-0.5 rounded-md border border-purple-100">${priceDisplay}</span>
         </div>
         <div class="p-4">
-            <div class="flex items-center gap-3 mb-3">
+            <div class="flex items-center gap-3 mb-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors" onclick="viewUserProfile('${post.uid}')">
                 <img src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover bg-gray-100">
                 <div>
-                    <p class="font-bold text-sm text-gray-800">${post.authorName}</p>
+                    <p class="font-bold text-sm text-gray-800 hover:underline">${post.authorName}</p>
                     <p class="text-xs text-gray-400">Organizator</p>
                 </div>
             </div>
