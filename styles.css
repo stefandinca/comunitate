@@ -1,0 +1,41 @@
+/* =====================================================
+   CORBEANCA COMMUNITY APP - Custom Styles
+   ===================================================== */
+
+/* Base Styles */
+body {
+    font-family: 'Nunito', sans-serif;
+    background-color: #F7F8FA;
+}
+
+/* Scrollbar Hiding */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Pulse Shadow Animation for FAB */
+@keyframes pulse-shadow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 140, 120, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 140, 120, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 140, 120, 0);
+    }
+}
+
+.fab-pulse {
+    animation: pulse-shadow 2s infinite;
+}
+
+/* Safe Area Padding for iOS/Android */
+.safe-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+}
