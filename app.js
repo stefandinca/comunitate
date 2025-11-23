@@ -428,6 +428,19 @@ window.toggleInterest = async (postId) => {
                 interestedCount: increment(1)
             });
             showToast('Te-ai înscris la interes.');
+
+            // Send notification to event organizer (only if not their own event)
+            if (postData.uid !== currentUser.uid) {
+                await addDoc(getCollectionRef(COLL_NOTIF), {
+                    recipientUid: postData.uid,
+                    senderName: userProfile?.name || 'Cineva',
+                    postId: postId,
+                    postTitle: postData.title,
+                    type: 'interest',
+                    read: false,
+                    timestamp: serverTimestamp()
+                });
+            }
         }
     } catch (e) {
         showToast('Eroare la actualizare.', 'error');
@@ -550,9 +563,9 @@ window.viewUserProfile = async (targetUid) => {
                 // Use a simplified version of card or reuse createMyPostCard
                 const card = createMyPostCard(post); // This shows "Edit/Delete" which is wrong for public view!
                 // Let's fix that below by making a read-only version
-                
+
                 const div = document.createElement('div');
-                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm";
+                div.className = "bg-gray-50 border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm cursor-pointer hover:bg-gray-100 transition-colors";
                 div.innerHTML = `
                     <div class="flex-1">
                         <h4 class="font-bold text-gray-800">${post.title}</h4>
@@ -561,7 +574,12 @@ window.viewUserProfile = async (targetUid) => {
                             <span class="text-xs text-brand-primary font-bold">${post.isFree ? 'Gratuit' : (post.price + ' RON')}</span>
                         </div>
                     </div>
+                    <span class="material-icons-round text-gray-400">arrow_forward</span>
                 `;
+                div.onclick = () => {
+                    toggleModal('modal-public-profile', false);
+                    openComments(post.id);
+                };
                 postsList.appendChild(div);
             });
         });
@@ -601,14 +619,29 @@ function listenForNotifications() {
 
         notifs.forEach(n => {
             if (!n.read) unreadCount++;
+
+            // Determine icon and message based on notification type
+            let icon, iconBg, iconColor, message;
+            if (n.type === 'interest') {
+                icon = 'favorite';
+                iconBg = 'bg-pink-100';
+                iconColor = 'text-pink-600';
+                message = `<span class="font-bold">${n.senderName}</span> este interesat de evenimentul tău <span class="font-bold">"${n.postTitle}"</span>.`;
+            } else {
+                icon = 'comment';
+                iconBg = 'bg-blue-100';
+                iconColor = 'text-blue-600';
+                message = `<span class="font-bold">${n.senderName}</span> a comentat la postarea ta <span class="font-bold">"${n.postTitle}"</span>.`;
+            }
+
             const div = document.createElement('div');
             div.className = `p-4 border-b border-gray-100 flex items-start gap-3 ${n.read ? 'bg-white' : 'bg-blue-50'}`;
             div.innerHTML = `
-                <div class="bg-blue-100 p-2 rounded-full text-blue-600">
-                    <span class="material-icons-round text-sm">comment</span>
+                <div class="${iconBg} p-2 rounded-full ${iconColor}">
+                    <span class="material-icons-round text-sm">${icon}</span>
                 </div>
                 <div class="flex-1">
-                    <p class="text-sm text-gray-800"><span class="font-bold">${n.senderName}</span> a comentat la postarea ta <span class="font-bold">"${n.postTitle}"</span>.</p>
+                    <p class="text-sm text-gray-800">${message}</p>
                     <p class="text-xs text-gray-400 mt-1">${new Date(n.timestamp?.seconds * 1000).toLocaleDateString('ro-RO')}</p>
                 </div>
                 ${!n.read ? '<div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>' : ''}
@@ -971,7 +1004,7 @@ function createEventCard(post) {
                 </div>
                 <button id="interest-btn-${post.id}" onclick="toggleInterest('${post.id}')" class="${btnClass} px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-200">
                     <span class="material-icons-round text-sm">${btnIcon}</span>
-                    Interes
+                    Interesat
                 </button>
             </div>
         </div>
