@@ -4,7 +4,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, setDoc, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, setDoc, doc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- FIREBASE CONFIGURATION ---
 const myRealFirebaseConfig = {
@@ -84,6 +84,9 @@ function timeAgo(timestamp) {
     return Math.floor(seconds) + "s";
 }
 
+// --- CONSTANTS ---
+const POSTS_PER_PAGE = 20;
+
 // --- STATE MANAGEMENT ---
 let currentUser = null;
 let userProfile = null;
@@ -102,6 +105,12 @@ let pendingEditPostImageBase64 = null;
 let isRegisterMode = false;
 let activePostType = 'sale';
 let activeProfileTab = 'my-posts';
+
+// Pagination state
+let lastVisiblePost = null;
+let hasMorePosts = true;
+let isLoadingMorePosts = false;
+let allPostsCache = []; // Store all loaded posts
 
 // --- DOM ELEMENTS ---
 const screens = {
@@ -155,6 +164,7 @@ function showScreen(screenName) {
         document.getElementById('bottom-nav').classList.remove('hidden');
         document.getElementById('nav-home').classList.replace('text-gray-300', 'text-brand-primary');
         loadPosts();
+        setupInfiniteScroll();
     } else if (screenName === 'profile') {
         screens.profile.classList.remove('hidden');
         screens.profile.classList.add('flex');
@@ -463,26 +473,184 @@ function loadUserProfile() {
 
 function loadPosts() {
     if (unsubscribePosts) unsubscribePosts();
-    const q = query(getCollectionRef(COLL_POSTS));
+
+    // Reset pagination state
+    lastVisiblePost = null;
+    hasMorePosts = true;
+    allPostsCache = [];
+
+    // Query with limit and orderBy for pagination
+    const q = query(
+        getCollectionRef(COLL_POSTS),
+        orderBy('timestamp', 'desc'),
+        limit(POSTS_PER_PAGE)
+    );
+
     unsubscribePosts = onSnapshot(q, (snapshot) => {
         feedContainer.innerHTML = '';
-        const posts = [];
-        snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
-        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        allPostsCache = [];
 
-        if (posts.length === 0) {
+        snapshot.forEach(doc => {
+            const post = { id: doc.id, ...doc.data(), _doc: doc };
+            allPostsCache.push(post);
+        });
+
+        // Store last visible document for pagination
+        if (snapshot.docs.length > 0) {
+            lastVisiblePost = snapshot.docs[snapshot.docs.length - 1];
+        }
+
+        // Check if there might be more posts
+        hasMorePosts = snapshot.docs.length === POSTS_PER_PAGE;
+
+        if (allPostsCache.length === 0) {
             feedContainer.innerHTML = `<div class="text-center py-10 text-gray-400">Nu sunt postări încă.</div>`;
             return;
         }
-        posts.forEach(post => {
-            if (post.type === 'event') {
-                feedContainer.appendChild(createEventCard(post));
-            } else {
-                feedContainer.appendChild(createPostCard(post));
-            }
-        });
+
+        renderPosts(allPostsCache);
+        showLoadMoreButton();
     });
 }
+
+function renderPosts(posts) {
+    // Clear container but keep load more button if it exists
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if (loadMoreBtn) loadMoreBtn.remove();
+
+    posts.forEach(post => {
+        if (post.type === 'event') {
+            feedContainer.appendChild(createEventCard(post));
+        } else {
+            feedContainer.appendChild(createPostCard(post));
+        }
+    });
+
+    showLoadMoreButton();
+}
+
+function showLoadMoreButton() {
+    // Remove existing button first
+    const existingBtn = document.getElementById('load-more-btn');
+    if (existingBtn) existingBtn.remove();
+
+    if (!hasMorePosts) return;
+
+    const loadMoreBtn = document.createElement('div');
+    loadMoreBtn.id = 'load-more-btn';
+    loadMoreBtn.className = 'flex justify-center py-6';
+    loadMoreBtn.innerHTML = `
+        <button onclick="loadMorePosts()" class="bg-brand-primary text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-red-400 transition-colors flex items-center gap-2">
+            <span id="load-more-text">Încarcă mai multe</span>
+            <span class="material-icons-round">expand_more</span>
+        </button>
+    `;
+    feedContainer.appendChild(loadMoreBtn);
+}
+
+// Optional: Infinite scroll detection
+let scrollListener = null;
+
+function setupInfiniteScroll() {
+    // Remove existing listener if any
+    if (scrollListener) {
+        feedContainer.removeEventListener('scroll', scrollListener);
+    }
+
+    scrollListener = () => {
+        const scrollableParent = document.getElementById('screen-feed');
+        if (!scrollableParent) return;
+
+        const scrollTop = scrollableParent.scrollTop;
+        const scrollHeight = scrollableParent.scrollHeight;
+        const clientHeight = scrollableParent.clientHeight;
+
+        // Trigger load when user is 200px from bottom
+        if (scrollTop + clientHeight >= scrollHeight - 200) {
+            if (!isLoadingMorePosts && hasMorePosts) {
+                loadMorePosts();
+            }
+        }
+    };
+
+    const scrollableParent = document.getElementById('screen-feed');
+    if (scrollableParent) {
+        scrollableParent.addEventListener('scroll', scrollListener);
+    }
+}
+
+window.loadMorePosts = async () => {
+    if (isLoadingMorePosts || !hasMorePosts || !lastVisiblePost) return;
+
+    isLoadingMorePosts = true;
+    const loadMoreText = document.getElementById('load-more-text');
+    if (loadMoreText) {
+        loadMoreText.innerHTML = '<span class="material-icons-round animate-spin inline-block">refresh</span>';
+    }
+
+    try {
+        const q = query(
+            getCollectionRef(COLL_POSTS),
+            orderBy('timestamp', 'desc'),
+            startAfter(lastVisiblePost),
+            limit(POSTS_PER_PAGE)
+        );
+
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty || snapshot.docs.length < POSTS_PER_PAGE) {
+            hasMorePosts = false;
+        }
+
+        if (snapshot.docs.length > 0) {
+            lastVisiblePost = snapshot.docs[snapshot.docs.length - 1];
+
+            snapshot.forEach(doc => {
+                const post = { id: doc.id, ...doc.data(), _doc: doc };
+                allPostsCache.push(post);
+
+                if (post.type === 'event') {
+                    // Insert before load more button
+                    const loadMoreBtn = document.getElementById('load-more-btn');
+                    if (loadMoreBtn) {
+                        feedContainer.insertBefore(createEventCard(post), loadMoreBtn);
+                    } else {
+                        feedContainer.appendChild(createEventCard(post));
+                    }
+                } else {
+                    const loadMoreBtn = document.getElementById('load-more-btn');
+                    if (loadMoreBtn) {
+                        feedContainer.insertBefore(createPostCard(post), loadMoreBtn);
+                    } else {
+                        feedContainer.appendChild(createPostCard(post));
+                    }
+                }
+            });
+        }
+
+        if (!hasMorePosts) {
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            if (loadMoreBtn) loadMoreBtn.remove();
+
+            const endMessage = document.createElement('div');
+            endMessage.className = 'text-center py-6 text-gray-400 text-sm';
+            endMessage.innerHTML = '✓ Toate postările au fost încărcate';
+            feedContainer.appendChild(endMessage);
+        } else {
+            showLoadMoreButton();
+        }
+
+    } catch (error) {
+        console.error('Error loading more posts:', error);
+        showToast('Eroare la încărcare', 'error');
+        hasMorePosts = true; // Allow retry
+    } finally {
+        isLoadingMorePosts = false;
+        if (loadMoreText) {
+            loadMoreText.textContent = 'Încarcă mai multe';
+        }
+    }
+};
 
 function loadMyPosts() {
     if (unsubscribeMyPosts) unsubscribeMyPosts();
