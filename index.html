@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDKs & App Logic -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7g_30PtpeN18p_CExJbXloECEe3vIYdo"></script>
     <script type="module" src="app.js"></script>
 
     <script>
@@ -373,82 +373,16 @@
             </div>
 
             <form id="create-form" class="flex-1 overflow-y-auto hide-scrollbar space-y-4">
-                <div class="flex bg-gray-100 p-1 rounded-xl mb-4">
-                    <button type="button" id="type-sale-btn" onclick="switchPostType('sale')" class="flex-1 py-2 rounded-lg text-sm font-bold bg-brand-primary text-white shadow-sm transition-all">
-                        Vânzare
-                    </button>
-                    <button type="button" id="type-event-btn" onclick="switchPostType('event')" class="flex-1 py-2 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 transition-all">
-                        Eveniment
-                    </button>
-                </div>
-
-                <!-- Category Section -->
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Categorie</label>
-                    
-                    <!-- SALE Categories -->
-                    <div id="cats-sale" class="grid grid-cols-4 gap-2">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-sale" value="kids" class="peer hidden" checked>
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-blue-400 mb-1">child_friendly</span>
-                                <span class="text-[10px] font-bold text-gray-600">Copii</span>
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-sale" value="home" class="peer hidden">
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-orange-400 mb-1">chair</span>
-                                <span class="text-[10px] font-bold text-gray-600">Casă</span>
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-sale" value="fashion" class="peer hidden">
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-pink-400 mb-1">checkroom</span>
-                                <span class="text-[10px] font-bold text-gray-600">Haine</span>
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-sale" value="tech" class="peer hidden">
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-purple-400 mb-1">devices</span>
-                                <span class="text-[10px] font-bold text-gray-600">Tech</span>
-                            </div>
-                        </label>
-                    </div>
-
-                    <!-- EVENT Categories (Hidden by default) -->
-                    <div id="cats-event" class="hidden grid grid-cols-4 gap-2">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-event" value="workshop" class="peer hidden" checked>
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-indigo-400 mb-1">brush</span>
-                                <span class="text-[10px] font-bold text-gray-600">Workshop</span>
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-event" value="playdate" class="peer hidden">
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-pink-400 mb-1">toys</span>
-                                <span class="text-[10px] font-bold text-gray-600">Playdate</span>
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-event" value="culture" class="peer hidden">
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-orange-400 mb-1">theater_comedy</span>
-                                <span class="text-[10px] font-bold text-gray-600">Cultură</span>
-                            </div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="cat-event" value="sport" class="peer hidden">
-                            <div class="flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-brand-secondary peer-checked:bg-teal-50">
-                                <span class="material-icons-round text-green-400 mb-1">sports_soccer</span>
-                                <span class="text-[10px] font-bold text-gray-600">Sport</span>
-                            </div>
-                        </label>
-                    </div>
+                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Categorie</label>
+                    <select id="post-category" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
+                        <option value="sale">Bazar</option>
+                        <option value="borrow">Cereri imprumut</option>
+                        <option value="event">Evenimente</option>
+                        <option value="local">Interes Local</option>
+                        <option value="business">Afaceri locale</option>
+                        <option value="recommendation">Recomandari</option>
+                    </select>
                 </div>
 
                 <div>
@@ -659,15 +593,7 @@
             </div>
 
             <div class="flex-1 relative">
-                <iframe
-                    id="location-map-frame"
-                    width="100%"
-                    height="100%"
-                    frameborder="0"
-                    style="border:0"
-                    src="https://maps.google.com/maps?q=Corbeanca,Romania&output=embed&z=14"
-                    allowfullscreen>
-                </iframe>
+                <div id="map" class="w-full h-full"></div>
             </div>
 
             <div class="p-4 bg-white border-t border-gray-100">

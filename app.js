@@ -206,7 +206,6 @@ function toggleModal(modalId, show) {
             if (phoneInput && userProfile?.phone) {
                 phoneInput.value = userProfile.phone;
             }
-            switchPostType('sale');
             clearCreateImage();
         }
         if (modalId === 'modal-edit' && !show) {
@@ -401,6 +400,7 @@ async function uploadImage(file, path) {
 
 // Image Handlers
 document.addEventListener('DOMContentLoaded', () => {
+    initMap();
     const fileInput = document.getElementById('prof-avatar-file');
     if (fileInput) {
         fileInput.addEventListener('change', async (e) => {
@@ -446,6 +446,23 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 console.error(err);
                 showToast("Eroare procesare imagine", "error");
+            }
+        });
+    }
+
+    const postCategory = document.getElementById('post-category');
+    if(postCategory) {
+        postCategory.addEventListener('change', (e) => {
+            const type = e.target.value;
+            const priceSection = document.getElementById('section-price');
+            const eventDetails = document.getElementById('section-event-details');
+
+            if (type === 'event') {
+                priceSection.classList.add('hidden');
+                eventDetails.classList.remove('hidden');
+            } else {
+                priceSection.classList.remove('hidden');
+                eventDetails.classList.add('hidden');
             }
         });
     }
@@ -579,6 +596,13 @@ profileForm.addEventListener('submit', async (e) => {
             newData.avatar = url;
             newData.avatarPath = path;
         }
+        if (selectedAddress && selectedLat && selectedLng) {
+            newData.location = {
+                address: selectedAddress,
+                lat: selectedLat,
+                lng: selectedLng
+            };
+        }
         await updateDoc(getDocPath(COLL_USERS, currentUser.uid), newData);
         userProfile = { ...userProfile, ...newData };
         localStorage.setItem('user_name', name);
@@ -604,6 +628,12 @@ function loadUserProfile() {
     const avatarEl = document.getElementById('profile-display-avatar');
     if (userProfile.avatar) avatarEl.src = userProfile.avatar;
     else avatarEl.src = `https://ui-avatars.com/api/?name=${userProfile.name}&background=random`;
+    // Update selectedLocation with user profile's location
+    if (userProfile.location) {
+        selectedAddress = userProfile.location.address;
+        selectedLat = userProfile.location.lat;
+        selectedLng = userProfile.location.lng;
+    }
 }
 
 // --- DATA LOADING FUNCTIONS (Restored) ---
@@ -881,37 +911,6 @@ function loadInterestedEvents() {
     });
 }
 
-// --- POST LOGIC ---
-window.switchPostType = (type) => {
-    activePostType = type;
-    const saleBtn = document.getElementById('type-sale-btn');
-    const eventBtn = document.getElementById('type-event-btn');
-    const saleCats = document.getElementById('cats-sale');
-    const eventCats = document.getElementById('cats-event');
-    const priceSection = document.getElementById('section-price');
-    const eventDetails = document.getElementById('section-event-details');
-
-    if (type === 'sale') {
-        saleBtn.classList.replace('bg-gray-100', 'bg-brand-primary');
-        saleBtn.classList.replace('text-gray-500', 'text-white');
-        eventBtn.classList.replace('bg-brand-primary', 'bg-gray-100');
-        eventBtn.classList.replace('text-white', 'text-gray-500');
-        saleCats.classList.remove('hidden');
-        eventCats.classList.add('hidden');
-        priceSection.classList.remove('hidden');
-        eventDetails.classList.add('hidden');
-    } else {
-        eventBtn.classList.replace('bg-gray-100', 'bg-brand-primary');
-        eventBtn.classList.replace('text-gray-500', 'text-white');
-        saleBtn.classList.replace('bg-brand-primary', 'bg-gray-100');
-        saleBtn.classList.replace('text-white', 'text-gray-500');
-        eventCats.classList.remove('hidden');
-        saleCats.classList.add('hidden');
-        eventDetails.classList.remove('hidden');
-        priceSection.classList.add('hidden');
-    }
-}
-
 window.toggleEventPrice = () => {
     const isPaid = document.getElementById('event-paid').checked;
     const priceInput = document.getElementById('event-price-input');
@@ -985,23 +984,28 @@ createForm.addEventListener('submit', async (e) => {
             authorAvatar,
             uid: currentUser.uid,
             timestamp: serverTimestamp(),
-            type: activePostType,
+            type: document.getElementById('post-category').value,
             commentCount: 0,
             image: imageUrl,
             imagePath: imagePath
         };
 
-        if (activePostType === 'sale') {
+        if (formData.type === 'sale') {
             formData.price = document.getElementById('post-price').value;
-            formData.category = document.querySelector('input[name="cat-sale"]:checked')?.value || 'other';
-        } else {
-            formData.category = document.querySelector('input[name="cat-event"]:checked')?.value || 'other';
+        } else if (formData.type === 'event') {
             formData.eventDate = document.getElementById('event-date').value;
             formData.eventTime = document.getElementById('event-time').value;
             const isPaid = document.getElementById('event-paid').checked;
             formData.isFree = !isPaid;
             formData.price = isPaid ? document.getElementById('event-price-val').value : 0;
             formData.eventLocation = document.getElementById('event-location').value;
+            if (selectedAddress && selectedLat && selectedLng) {
+                formData.eventLocationDetails = {
+                    address: selectedAddress,
+                    lat: selectedLat,
+                    lng: selectedLng
+                };
+            }
             formData.interestedCount = 0;
             formData.interestedUsers = [];
         }
@@ -1239,6 +1243,13 @@ if (editForm) {
                 updateData.eventDate = document.getElementById('edit-event-date').value;
                 updateData.eventTime = document.getElementById('edit-event-time').value;
                 updateData.eventLocation = document.getElementById('edit-event-location').value;
+                if (selectedAddress && selectedLat && selectedLng) {
+                    updateData.eventLocationDetails = {
+                        address: selectedAddress,
+                        lat: selectedLat,
+                        lng: selectedLng
+                    };
+                }
 
                 const isPaid = document.getElementById('edit-event-paid').checked;
                 updateData.isFree = !isPaid;
@@ -1295,6 +1306,16 @@ window.openEditModal = async (postId) => {
             document.getElementById('edit-event-date').value = post.eventDate || '';
             document.getElementById('edit-event-time').value = post.eventTime || '';
             document.getElementById('edit-event-location').value = post.eventLocation || '';
+            
+            if (post.eventLocationDetails) {
+                selectedAddress = post.eventLocationDetails.address;
+                selectedLat = post.eventLocationDetails.lat;
+                selectedLng = post.eventLocationDetails.lng;
+            } else {
+                selectedAddress = post.eventLocation || 'Corbeanca, Romania';
+                selectedLat = 44.6293;
+                selectedLng = 26.0469;
+            }
 
             if (post.isFree) {
                 document.getElementById('edit-event-free').checked = true;
@@ -1615,8 +1636,11 @@ function renderEventDetails(post, container) {
     const eventDateObj = new Date(post.eventDate);
     const dateStr = eventDateObj.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const priceDisplay = post.isFree ? "Gratuit" : `${post.price} RON`;
-    const location = post.eventLocation || 'Corbeanca';
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+    const location = post.eventLocationDetails?.address || post.eventLocation || 'Corbeanca';
+    const lat = post.eventLocationDetails?.lat || 44.6293;
+    const lng = post.eventLocationDetails?.lng || 26.0469;
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}&query_place_id=${lat},${lng}`;
+    const embedMapUrl = `https://maps.google.com/maps?q=${lat},${lng}&output=embed&z=15`;
     const btnClass = isInterested ? "bg-purple-600 text-white" : "bg-purple-100 text-purple-700";
     const btnIcon = isInterested ? "favorite" : "favorite_border";
     const btnText = isInterested ? "Interesat" : "Marchează Interes";
@@ -1664,7 +1688,7 @@ function renderEventDetails(post, container) {
                         height="250"
                         frameborder="0"
                         style="border:0"
-                        src="https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed&z=15"
+                        src="${embedMapUrl}"
                         loading="lazy"
                         allowfullscreen>
                     </iframe>
@@ -1759,54 +1783,134 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// --- LOCATION PICKER FUNCTIONS ---
-let selectedLocation = '';
-let locationPickerMode = 'edit'; 
+// --- GLOBAL MAP VARIABLES ---
+let map;
+let marker;
+let geocoder;
+let selectedLat = 44.6293; // Default to Corbeanca, Romania
+let selectedLng = 26.0469;
+let selectedAddress = 'Corbeanca, Romania';
+let locationPickerMode = 'edit'; // 'edit' or 'create'
 
+// --- GOOGLE MAPS INIT ---
+async function initMap() {
+    const { Map } = await google.maps.importLibrary("maps");
+    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+    map = new Map(document.getElementById('map'), {
+        center: { lat: selectedLat, lng: selectedLng },
+        zoom: 14,
+        mapId: 'f27c0aadac960951ff249d2f',
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false
+    });
+
+    marker = new AdvancedMarkerElement({
+        map,
+        position: { lat: selectedLat, lng: selectedLng },
+        gmpDraggable: true,
+    });
+
+    geocoder = new google.maps.Geocoder();
+
+    // Listen for map clicks
+    map.addListener('click', (e) => {
+        placeMarkerAndPanTo(e.latLng, map);
+    });
+
+    // Listen for marker drag end
+    marker.addListener('dragend', () => {
+        geocodeLatLng(marker.position);
+    });
+}
+
+function placeMarkerAndPanTo(latLng, map) {
+    marker.position = latLng;
+    map.panTo(latLng);
+    geocodeLatLng(latLng);
+}
+
+function geocodeLatLng(latlng) {
+    geocoder.geocode({ location: latlng }, (results, status) => {
+        if (status === 'OK') {
+            if (results[0]) {
+                selectedAddress = results[0].formatted_address;
+                selectedLat = latlng.lat();
+                selectedLng = latlng.lng();
+                document.getElementById('selected-location-display').value = selectedAddress;
+            } else {
+                window.alert('No results found');
+            }
+        } else {
+            window.alert('Geocoder failed due to: ' + status);
+        }
+    });
+}
+
+function geocodeAddress(address) {
+    geocoder.geocode({ address: address }, (results, status) => {
+        if (status === 'OK') {
+            if (results[0]) {
+                const latLng = results[0].geometry.location;
+                placeMarkerAndPanTo(latLng, map);
+                selectedAddress = results[0].formatted_address;
+                selectedLat = latLng.lat();
+                selectedLng = latLng.lng();
+                document.getElementById('selected-location-display').value = selectedAddress;
+            } else {
+                window.alert('Address not found');
+            }
+        } else {
+            window.alert('Geocoding failed due to: ' + status);
+        }
+    });
+}
+
+// --- LOCATION PICKER FUNCTIONS ---
 window.openLocationPicker = () => {
     locationPickerMode = 'edit';
-    const currentLocation = document.getElementById('edit-event-location').value;
-
-    if (currentLocation) {
-        const mapFrame = document.getElementById('location-map-frame');
-        mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(currentLocation)}&output=embed&z=15`;
-        document.getElementById('selected-location-display').value = currentLocation;
-        selectedLocation = currentLocation;
-    } else {
-        document.getElementById('selected-location-display').value = 'Corbeanca, România';
-        selectedLocation = 'Corbeanca, România';
-    }
+    const currentLoc = userProfile.location || { address: 'Corbeanca, Romania', lat: 44.6293, lng: 26.0469 };
 
     toggleModal('modal-location-picker', true);
+    
+    // Ensure map is initialized and ready before trying to set center/marker
+    google.maps.event.addListenerOnce(map, 'idle', () => {
+        geocodeAddress(currentLoc.address);
+    });
 };
 
 window.openLocationPickerForCreate = () => {
     locationPickerMode = 'create';
     const currentLocation = document.getElementById('event-location').value;
 
-    if (currentLocation) {
-        const mapFrame = document.getElementById('location-map-frame');
-        mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(currentLocation)}&output=embed&z=15`;
-        document.getElementById('selected-location-display').value = currentLocation;
-        selectedLocation = currentLocation;
-    } else {
-        document.getElementById('selected-location-display').value = 'Corbeanca, România';
-        selectedLocation = 'Corbeanca, România';
-    }
-
     toggleModal('modal-location-picker', true);
+
+    google.maps.event.addListenerOnce(map, 'idle', () => {
+        if (currentLocation) {
+            geocodeAddress(currentLocation);
+        } else {
+            geocodeAddress('Corbeanca, Romania');
+        }
+    });
 };
 
 window.confirmLocationSelection = () => {
-    const location = document.getElementById('selected-location-display').value || selectedLocation;
+    if (selectedAddress && selectedLat && selectedLng) {
+        const locationObject = {
+            address: selectedAddress,
+            lat: selectedLat,
+            lng: selectedLng
+        };
 
-    if (location) {
         if (locationPickerMode === 'create') {
-            document.getElementById('event-location').value = location;
-        } else {
-            document.getElementById('edit-event-location').value = location;
+            document.getElementById('event-location').value = selectedAddress;
+        } else { // 'edit' mode
+            document.getElementById('edit-event-location').value = selectedAddress;
         }
         showToast('Locație selectată!');
+    } else {
+        showToast('Selectează o locație validă!', 'error');
     }
 
     toggleModal('modal-location-picker', false);
@@ -1825,11 +1929,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const searchQuery = e.target.value.trim();
 
                 if (searchQuery.length > 2) {
-                    const mapFrame = document.getElementById('location-map-frame');
-                    mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed&z=15`;
-
-                    document.getElementById('selected-location-display').value = searchQuery;
-                    selectedLocation = searchQuery;
+                    geocodeAddress(searchQuery);
                 }
             }, 500); 
         });
@@ -1840,10 +1940,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const searchQuery = e.target.value.trim();
 
                 if (searchQuery) {
-                    const mapFrame = document.getElementById('location-map-frame');
-                    mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed&z=15`;
-                    document.getElementById('selected-location-display').value = searchQuery;
-                    selectedLocation = searchQuery;
+                    geocodeAddress(searchQuery);
                 }
             }
         });
