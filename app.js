@@ -6,17 +6,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, setDoc, doc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { FIREBASE_CONFIG, GOOGLE_MAPS_API_KEY } from './config.js';
 
 // --- FIREBASE CONFIGURATION ---
-const myRealFirebaseConfig = {
-    apiKey: "AIzaSyDlJySD0JWV3joNXiGOR9SXhKkffNxozMw",
-    authDomain: "corbeanca-community.firebaseapp.com",
-    projectId: "corbeanca-community",
-    storageBucket: "corbeanca-community.firebasestorage.app",
-    messagingSenderId: "1086285762362",
-    appId: "1:1086285762362:web:885b97b8cf4a72c1f18a03",
-    measurementId: "G-T479WRD5G2"
-};
+const myRealFirebaseConfig = FIREBASE_CONFIG;
 
 let activeConfig;
 let appId;
@@ -97,6 +90,11 @@ let unsubscribeMyPosts = null;
 let unsubscribeInterested = null;
 let unsubscribeComments = null;
 let unsubscribeNotifs = null;
+
+// --- HELPER FUNCTIONS ---
+function isSuperAdmin() {
+    return userProfile && userProfile.role === 'super-admin';
+}
 let unsubscribePublicProfilePosts = null;
 let editingPostId = null;
 let currentCommentingPostId = null;
@@ -124,6 +122,7 @@ const screens = {
     login: document.getElementById('screen-login'),
     feed: document.getElementById('screen-feed'),
     profile: document.getElementById('screen-profile'),
+    admin: document.getElementById('screen-admin'),
     create: document.getElementById('modal-create'),
     edit: document.getElementById('modal-edit'),
     comments: document.getElementById('modal-comments'),
@@ -192,6 +191,19 @@ function showScreen(screenName) {
         navProfile.classList.add('opacity-100');
         loadUserProfile();
         switchProfileTab('my-posts');
+    } else if (screenName === 'admin') {
+        if (!isSuperAdmin()) {
+            showToast('Acces interzis!', 'error');
+            showScreen('feed');
+            return;
+        }
+        screens.admin.classList.remove('hidden');
+        screens.admin.classList.add('flex');
+        document.getElementById('bottom-nav').classList.remove('hidden');
+        const navAdmin = document.getElementById('nav-admin');
+        navAdmin.classList.remove('opacity-60');
+        navAdmin.classList.add('opacity-100');
+        loadAdminDashboard();
     }
 }
 
@@ -256,6 +268,17 @@ onAuthStateChanged(auth, async (user) => {
             userProfile = docSnap.data();
             userDisplayName.textContent = `Salut, ${userProfile.name}!`;
             document.getElementById('header-user-avatar').src = userProfile.avatar || `https://ui-avatars.com/api/?name=${userProfile.name}&background=random`;
+
+            // Show/hide admin nav button based on role
+            const adminNavBtn = document.getElementById('nav-admin');
+            if (isSuperAdmin()) {
+                adminNavBtn.classList.remove('hidden');
+                adminNavBtn.classList.add('flex');
+            } else {
+                adminNavBtn.classList.add('hidden');
+                adminNavBtn.classList.remove('flex');
+            }
+
             showScreen('feed');
         } else {
             userDisplayName.textContent = `Salut!`;
@@ -343,7 +366,7 @@ loginForm.addEventListener('submit', async (e) => {
         if (isRegisterMode) {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            const profileData = { name, phone, email, avatar: '', createdAt: serverTimestamp() };
+            const profileData = { name, phone, email, avatar: '', role: 'user', createdAt: serverTimestamp() };
             await setDoc(getDocPath(COLL_USERS, user.uid), profileData);
             userProfile = profileData;
             localStorage.setItem('user_name', name);
@@ -400,7 +423,6 @@ async function uploadImage(file, path) {
 
 // Image Handlers
 document.addEventListener('DOMContentLoaded', () => {
-    initMap();
     const fileInput = document.getElementById('prof-avatar-file');
     if (fileInput) {
         fileInput.addEventListener('change', async (e) => {
@@ -1152,7 +1174,10 @@ window.openComments = (postId) => {
                         <p class="text-[10px] font-bold text-gray-500 mb-0.5 cursor-pointer hover:underline" onclick="viewUserProfile('${comment.uid}')">${comment.authorName}</p>
                         <p class="text-sm leading-relaxed">${comment.text}</p>
                     </div>
-                    <p class="text-[10px] text-gray-300 mt-1 ml-2">acum ${timeAgo(new Date(comment.timestamp?.seconds * 1000))}</p>
+                    <div class="flex items-center gap-2 mt-1 ml-2">
+                        <p class="text-[10px] text-gray-300">acum ${timeAgo(new Date(comment.timestamp?.seconds * 1000))}</p>
+                        ${isSuperAdmin() ? `<button onclick="adminDeleteComment('${postId}', '${comment.id}')" class="text-[10px] text-red-500 hover:text-red-700 font-bold ml-2">Delete</button>` : ''}
+                    </div>
                 </div>
             `;
             commentsList.appendChild(div);
@@ -1444,9 +1469,14 @@ function createPostCard(post) {
                     <p>${date}</p>
                 </div>
             </div>
-            <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
-                <span class="material-icons-round">more_horiz</span>
-            </button>
+            <div class="flex items-center gap-1">
+                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="text-red-500 hover:text-red-700 p-1" title="Admin: Delete Post">
+                    <span class="material-icons-round text-sm">delete</span>
+                </button>` : ''}
+                <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-round">more_horiz</span>
+                </button>
+            </div>
         </div>
 
         <!-- Post Image -->
@@ -1505,9 +1535,14 @@ function createEventCard(post) {
                     <p>${date}</p>
                 </div>
             </div>
-            <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
-                <span class="material-icons-round">more_horiz</span>
-            </button>
+            <div class="flex items-center gap-1">
+                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="text-red-500 hover:text-red-700 p-1" title="Admin: Delete Event">
+                    <span class="material-icons-round text-sm">delete</span>
+                </button>` : ''}
+                <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-round">more_horiz</span>
+                </button>
+            </div>
         </div>
 
         <!-- Post Image -->
@@ -1787,6 +1822,8 @@ function showToast(message, type = 'success') {
 let map;
 let marker;
 let geocoder;
+let mapInitialized = false;
+let mapInitializing = false;
 let selectedLat = 44.6293; // Default to Corbeanca, Romania
 let selectedLng = 26.0469;
 let selectedAddress = 'Corbeanca, Romania';
@@ -1794,8 +1831,20 @@ let locationPickerMode = 'edit'; // 'edit' or 'create'
 
 // --- GOOGLE MAPS INIT ---
 async function initMap() {
-    const { Map } = await google.maps.importLibrary("maps");
-    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+    if (mapInitialized) return;
+    if (mapInitializing) {
+        // Wait for initialization to complete
+        while (mapInitializing) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return;
+    }
+
+    mapInitializing = true;
+
+    try {
+        const { Map } = await google.maps.importLibrary("maps");
+        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
 
     map = new Map(document.getElementById('map'), {
         center: { lat: selectedLat, lng: selectedLng },
@@ -1812,17 +1861,25 @@ async function initMap() {
         gmpDraggable: true,
     });
 
-    geocoder = new google.maps.Geocoder();
+        geocoder = new google.maps.Geocoder();
 
-    // Listen for map clicks
-    map.addListener('click', (e) => {
-        placeMarkerAndPanTo(e.latLng, map);
-    });
+        // Listen for map clicks
+        map.addListener('click', (e) => {
+            placeMarkerAndPanTo(e.latLng, map);
+        });
 
-    // Listen for marker drag end
-    marker.addListener('dragend', () => {
-        geocodeLatLng(marker.position);
-    });
+        // Listen for marker drag end
+        marker.addListener('dragend', () => {
+            geocodeLatLng(marker.position);
+        });
+
+        mapInitialized = true;
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        showToast("Eroare la încărcarea hărții", "error");
+    } finally {
+        mapInitializing = false;
+    }
 }
 
 function placeMarkerAndPanTo(latLng, map) {
@@ -1868,23 +1925,29 @@ function geocodeAddress(address) {
 }
 
 // --- LOCATION PICKER FUNCTIONS ---
-window.openLocationPicker = () => {
+window.openLocationPicker = async () => {
     locationPickerMode = 'edit';
     const currentLoc = userProfile.location || { address: 'Corbeanca, Romania', lat: 44.6293, lng: 26.0469 };
 
     toggleModal('modal-location-picker', true);
-    
+
+    // Initialize map if not already initialized
+    await initMap();
+
     // Ensure map is initialized and ready before trying to set center/marker
     google.maps.event.addListenerOnce(map, 'idle', () => {
         geocodeAddress(currentLoc.address);
     });
 };
 
-window.openLocationPickerForCreate = () => {
+window.openLocationPickerForCreate = async () => {
     locationPickerMode = 'create';
     const currentLocation = document.getElementById('event-location').value;
 
     toggleModal('modal-location-picker', true);
+
+    // Initialize map if not already initialized
+    await initMap();
 
     google.maps.event.addListenerOnce(map, 'idle', () => {
         if (currentLocation) {
@@ -1946,6 +2009,270 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// --- ADMIN DASHBOARD FUNCTIONS ---
+let adminPosts = [];
+let adminUsers = [];
+let adminAllPosts = [];
+
+async function loadAdminDashboard() {
+    if (!isSuperAdmin()) return;
+
+    try {
+        // Load all posts
+        const postsQuery = query(collection(db, COLL_POSTS), orderBy('createdAt', 'desc'));
+        const postsSnap = await getDocs(postsQuery);
+        adminAllPosts = postsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        adminPosts = [...adminAllPosts];
+
+        // Load all users
+        const usersQuery = query(collection(db, COLL_USERS));
+        const usersSnap = await getDocs(usersQuery);
+        adminUsers = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Count comments
+        let totalComments = 0;
+        for (const post of adminPosts) {
+            const commentsSnap = await getDocs(collection(db, COLL_POSTS, post.id, 'comments'));
+            totalComments += commentsSnap.size;
+        }
+
+        // Update stats
+        document.getElementById('admin-total-posts').textContent = adminPosts.length;
+        document.getElementById('admin-total-users').textContent = adminUsers.length;
+        document.getElementById('admin-total-comments').textContent = totalComments;
+
+        // Render posts
+        renderAdminPosts();
+        switchAdminTab('posts');
+    } catch (error) {
+        console.error('Error loading admin dashboard:', error);
+        showToast('Eroare la încărcarea dashboard-ului', 'error');
+    }
+}
+
+window.switchAdminTab = (tabName) => {
+    // Update tab buttons
+    document.querySelectorAll('[id^="admin-tab-"]').forEach(btn => {
+        btn.classList.remove('text-brand-primary', 'border-brand-primary');
+        btn.classList.add('text-gray-400', 'border-transparent');
+    });
+
+    document.getElementById(`admin-tab-${tabName}`).classList.remove('text-gray-400', 'border-transparent');
+    document.getElementById(`admin-tab-${tabName}`).classList.add('text-brand-primary', 'border-brand-primary');
+
+    // Show/hide tab content
+    document.getElementById('admin-posts-tab').classList.add('hidden');
+    document.getElementById('admin-users-tab').classList.add('hidden');
+    document.getElementById('admin-reports-tab').classList.add('hidden');
+
+    document.getElementById(`admin-${tabName}-tab`).classList.remove('hidden');
+
+    // Load data
+    if (tabName === 'posts') {
+        renderAdminPosts();
+    } else if (tabName === 'users') {
+        renderAdminUsers();
+    }
+};
+
+window.filterAdminPosts = () => {
+    const filter = document.getElementById('admin-posts-filter').value;
+    if (filter === 'all') {
+        adminPosts = [...adminAllPosts];
+    } else {
+        adminPosts = adminAllPosts.filter(p => p.category === filter);
+    }
+    renderAdminPosts();
+};
+
+window.searchAdminUsers = () => {
+    const searchTerm = document.getElementById('admin-users-search').value.toLowerCase();
+    renderAdminUsers(searchTerm);
+};
+
+function renderAdminPosts() {
+    const container = document.getElementById('admin-posts-list');
+    container.innerHTML = '';
+
+    if (adminPosts.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-8">Nu există postări</p>';
+        return;
+    }
+
+    adminPosts.forEach(post => {
+        const postEl = document.createElement('div');
+        postEl.className = 'bg-white border border-gray-200 rounded-xl p-3 flex items-start gap-3';
+        postEl.innerHTML = `
+            <div class="flex-1 min-w-0">
+                <div class="font-bold text-gray-800 text-sm truncate">${post.title}</div>
+                <div class="text-xs text-gray-500 mt-1">${getCategoryLabel(post.category)} • ${post.authorName}</div>
+                <div class="text-xs text-gray-400 mt-1">${formatTimestamp(post.createdAt)}</div>
+            </div>
+            <button onclick="adminDeletePost('${post.id}')" class="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition-colors flex-shrink-0">
+                <span class="material-icons-round text-sm">delete</span>
+            </button>
+        `;
+        container.appendChild(postEl);
+    });
+}
+
+function renderAdminUsers(searchTerm = '') {
+    const container = document.getElementById('admin-users-list');
+    container.innerHTML = '';
+
+    let filteredUsers = adminUsers;
+    if (searchTerm) {
+        filteredUsers = adminUsers.filter(u =>
+            u.name?.toLowerCase().includes(searchTerm) ||
+            u.email?.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    if (filteredUsers.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-8">Nu există utilizatori</p>';
+        return;
+    }
+
+    filteredUsers.forEach(user => {
+        const isAdmin = user.role === 'super-admin';
+        const isCurrent = user.id === currentUser.uid;
+        const userEl = document.createElement('div');
+        userEl.className = 'bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3';
+        userEl.innerHTML = `
+            <img src="${user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}" class="w-12 h-12 rounded-full object-cover flex-shrink-0">
+            <div class="flex-1 min-w-0">
+                <div class="font-bold text-gray-800 text-sm truncate flex items-center gap-2">
+                    ${user.name}
+                    ${isAdmin ? '<span class="text-xs bg-brand-primary text-white px-2 py-0.5 rounded-full">Admin</span>' : ''}
+                    ${isCurrent ? '<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">You</span>' : ''}
+                </div>
+                <div class="text-xs text-gray-500 truncate">${user.email}</div>
+                <div class="text-xs text-gray-400">${user.phone || 'No phone'}</div>
+            </div>
+            ${!isCurrent ? `
+                <div class="flex gap-2 flex-shrink-0">
+                    ${!isAdmin ? `<button onclick="adminToggleRole('${user.id}')" class="bg-blue-50 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors text-xs font-bold">
+                        Make Admin
+                    </button>` : ''}
+                    <button onclick="adminDeleteUser('${user.id}')" class="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition-colors">
+                        <span class="material-icons-round text-sm">delete</span>
+                    </button>
+                </div>
+            ` : ''}
+        `;
+        container.appendChild(userEl);
+    });
+}
+
+window.adminDeletePost = async (postId) => {
+    if (!isSuperAdmin()) {
+        showToast('Acces interzis!', 'error');
+        return;
+    }
+
+    if (!confirm('Sigur vrei să ștergi această postare?')) return;
+
+    try {
+        await deleteDoc(getDocPath(COLL_POSTS, postId));
+        adminPosts = adminPosts.filter(p => p.id !== postId);
+        adminAllPosts = adminAllPosts.filter(p => p.id !== postId);
+        renderAdminPosts();
+        document.getElementById('admin-total-posts').textContent = adminAllPosts.length;
+        showToast('Postare ștearsă cu succes', 'success');
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        showToast('Eroare la ștergerea postării', 'error');
+    }
+};
+
+window.adminDeleteUser = async (userId) => {
+    if (!isSuperAdmin()) {
+        showToast('Acces interzis!', 'error');
+        return;
+    }
+
+    if (!confirm('Sigur vrei să ștergi acest utilizator? Această acțiune este ireversibilă!')) return;
+
+    try {
+        // Delete user's posts
+        const userPosts = adminAllPosts.filter(p => p.authorId === userId);
+        for (const post of userPosts) {
+            await deleteDoc(getDocPath(COLL_POSTS, post.id));
+        }
+
+        // Delete user document
+        await deleteDoc(getDocPath(COLL_USERS, userId));
+
+        adminUsers = adminUsers.filter(u => u.id !== userId);
+        adminAllPosts = adminAllPosts.filter(p => p.authorId !== userId);
+        renderAdminUsers();
+        document.getElementById('admin-total-users').textContent = adminUsers.length;
+        document.getElementById('admin-total-posts').textContent = adminAllPosts.length;
+        showToast('Utilizator șters cu succes', 'success');
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        showToast('Eroare la ștergerea utilizatorului', 'error');
+    }
+};
+
+window.adminToggleRole = async (userId) => {
+    if (!isSuperAdmin()) {
+        showToast('Acces interzis!', 'error');
+        return;
+    }
+
+    try {
+        const userRef = getDocPath(COLL_USERS, userId);
+        await updateDoc(userRef, { role: 'super-admin' });
+
+        const userIndex = adminUsers.findIndex(u => u.id === userId);
+        if (userIndex !== -1) {
+            adminUsers[userIndex].role = 'super-admin';
+        }
+
+        renderAdminUsers();
+        showToast('Utilizator promovat la admin', 'success');
+    } catch (error) {
+        console.error('Error toggling role:', error);
+        showToast('Eroare la modificarea rolului', 'error');
+    }
+};
+
+window.adminDeleteComment = async (postId, commentId) => {
+    if (!isSuperAdmin()) {
+        showToast('Acces interzis!', 'error');
+        return;
+    }
+
+    if (!confirm('Sigur vrei să ștergi acest comentariu?')) return;
+
+    try {
+        const commentRef = doc(db, COLL_POSTS, postId, 'comments', commentId);
+        await deleteDoc(commentRef);
+        showToast('Comentariu șters cu succes', 'success');
+
+        // Reload comments if viewing them
+        if (currentCommentingPostId === postId) {
+            loadComments(postId);
+        }
+    } catch (error) {
+        console.error('Error deleting comment:', error);
+        showToast('Eroare la ștergerea comentariului', 'error');
+    }
+};
+
+function getCategoryLabel(category) {
+    const labels = {
+        'sale': 'Bazar',
+        'borrow': 'Împrumut',
+        'event': 'Eveniment',
+        'local': 'Local',
+        'business': 'Afacere',
+        'recommendation': 'Recomandare'
+    };
+    return labels[category] || category;
+}
 
 window.toggleModal = toggleModal;
 window.showScreen = showScreen;

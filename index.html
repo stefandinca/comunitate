@@ -16,7 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7g_30PtpeN18p_CExJbXloECEe3vIYdo"></script>
+    <script type="module">
+        // Load Google Maps API with key from config
+        import { GOOGLE_MAPS_API_KEY } from './config.js';
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async`;
+        document.head.appendChild(script);
+    </script>
     <script type="module" src="app.js"></script>
 
     <script>
@@ -142,7 +148,7 @@
         <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 hide-scrollbar">
             <div class="mb-6 animate-fade-in">
                 <h2 id="user-display-name" class="text-2xl font-extrabold text-gray-900">Salut! 👋</h2>
-                <p class="text-gray-600">Iată ce vând vecinii tăi astăzi.</p>
+                <p class="text-gray-600">Iată noutățile din comunitatea ta astăzi.</p>
             </div>
 
             <!-- Category Cards -->
@@ -278,6 +284,91 @@
                 </div>
                 
                 <button onclick="logout()" class="w-full text-red-500 font-bold text-sm py-4">Ieși din cont</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= VIEW: ADMIN DASHBOARD ================= -->
+    <section id="screen-admin" class="hidden flex-col h-full relative bg-white">
+        <header class="bg-brand-primary shadow-lg px-4 py-4 flex items-center gap-3 z-20 sticky top-0">
+            <button onclick="showScreen('feed')" class="p-2 text-white hover:bg-white/20 rounded-full transition-colors">
+                <span class="material-icons-round">arrow_back</span>
+            </button>
+            <div class="flex-1">
+                <h2 class="text-xl font-extrabold text-white">Admin Dashboard</h2>
+                <p class="text-white/80 text-xs">Super-Admin Control Panel</p>
+            </div>
+            <span class="material-icons-round text-white text-3xl">admin_panel_settings</span>
+        </header>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar pb-24">
+            <!-- Stats Cards -->
+            <div class="p-4 grid grid-cols-3 gap-3">
+                <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-lg">
+                    <div class="text-2xl font-extrabold" id="admin-total-posts">0</div>
+                    <div class="text-xs opacity-90">Total Posts</div>
+                </div>
+                <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-4 shadow-lg">
+                    <div class="text-2xl font-extrabold" id="admin-total-users">0</div>
+                    <div class="text-xs opacity-90">Total Users</div>
+                </div>
+                <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-4 shadow-lg">
+                    <div class="text-2xl font-extrabold" id="admin-total-comments">0</div>
+                    <div class="text-xs opacity-90">Comments</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="px-4 mb-4">
+                <div class="flex space-x-2 border-b border-gray-200 pb-2">
+                    <button id="admin-tab-posts" onclick="switchAdminTab('posts')" class="px-4 py-2 text-sm font-bold text-brand-primary border-b-2 border-brand-primary transition-all">
+                        Posts
+                    </button>
+                    <button id="admin-tab-users" onclick="switchAdminTab('users')" class="px-4 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-all hover:text-gray-600">
+                        Users
+                    </button>
+                    <button id="admin-tab-reports" onclick="switchAdminTab('reports')" class="px-4 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-all hover:text-gray-600">
+                        Reports
+                    </button>
+                </div>
+            </div>
+
+            <!-- Posts Tab -->
+            <div id="admin-posts-tab" class="px-4 space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-gray-800">All Posts</h3>
+                    <select id="admin-posts-filter" onchange="filterAdminPosts()" class="text-xs bg-gray-100 border-0 rounded-lg px-3 py-2 font-bold text-gray-700">
+                        <option value="all">All Categories</option>
+                        <option value="sale">Bazar</option>
+                        <option value="borrow">Cereri împrumut</option>
+                        <option value="event">Evenimente</option>
+                        <option value="local">Interes Local</option>
+                        <option value="business">Afaceri locale</option>
+                        <option value="recommendation">Recomandări</option>
+                    </select>
+                </div>
+                <div id="admin-posts-list" class="space-y-2">
+                    <div class="text-center py-8"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="admin-users-tab" class="hidden px-4 space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-gray-800">All Users</h3>
+                    <input type="text" id="admin-users-search" oninput="searchAdminUsers()" placeholder="Search users..." class="text-xs bg-gray-100 border-0 rounded-lg px-3 py-2">
+                </div>
+                <div id="admin-users-list" class="space-y-2">
+                    <div class="text-center py-8"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="admin-reports-tab" class="hidden px-4">
+                <div class="text-center py-12 text-gray-400">
+                    <span class="material-icons-round text-5xl mb-2">report</span>
+                    <p class="text-sm">Reports feature coming soon</p>
+                </div>
             </div>
         </div>
     </section>
@@ -633,8 +724,11 @@
             <span class="text-[10px] font-semibold">Profil</span>
         </button>
 
-        <!-- Placeholder for balance -->
-        <div class="w-6"></div>
+        <!-- Admin (Only for super-admins) -->
+        <button onclick="showScreen('admin')" id="nav-admin" class="hidden nav-btn flex-col items-center text-gray-500 opacity-60 transition-all gap-1">
+            <span class="material-icons-round">admin_panel_settings</span>
+            <span class="text-[10px] font-semibold">Admin</span>
+        </button>
     </nav>
 </body>
 </html>

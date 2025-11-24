@@ -1,0 +1,31 @@
+# API Keys and Secrets
+config.js
+.env
+.env.local
+keys-to-remove.txt
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+config.example.js
+git-filter-repo
+verify-security.js
+API_SECURITY.md
