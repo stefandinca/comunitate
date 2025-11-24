@@ -61,94 +61,100 @@
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-brand-bg text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
+<body class="h-screen w-screen overflow-hidden flex flex-col relative">
 
     <!-- ================= VIEW: LOGIN ================= -->
-    <section id="screen-login" class="hidden flex-col h-full items-center justify-center p-6 bg-brand-bg z-50">
-        <div class="text-center mb-8">
-            <div class="w-20 h-20 bg-brand-primary rounded-3xl mx-auto flex items-center justify-center mb-4 shadow-lg">
-                <span class="material-icons-round text-white text-4xl">groups</span>
+    <section id="screen-login" class="hidden flex-col h-full items-center justify-center p-6 z-50 relative">
+        <div class="text-center mb-10 animate-fade-in">
+            <div class="w-24 h-24 mx-auto flex items-center justify-center mb-6 relative neon-glow" style="perspective: 1000px;">
+                <div class="glass-card rounded-full p-5">
+                    <span class="material-icons-round text-6xl holographic-text">groups</span>
+                </div>
             </div>
-            <h1 id="auth-title" class="text-3xl font-extrabold text-gray-900 mb-2">Bine ai revenit!</h1>
-            <p class="text-gray-500">Conectează-te pentru a interacționa cu vecinii.</p>
+            <h1 id="auth-title" class="text-4xl font-extrabold mb-3 holographic-text">Bine ai revenit!</h1>
+            <p style="color: var(--text-secondary);">Conectează-te la comunitatea ta</p>
         </div>
-        <form id="login-form" class="w-full max-w-sm space-y-4">
+        <form id="login-form" class="w-full max-w-md space-y-5 glass-card p-8">
             <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-2">Email</label>
-                <input type="email" id="input-email" required placeholder="nume@email.com" class="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 font-bold text-gray-800 focus:outline-none focus:border-brand-primary focus:bg-white transition-all">
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Email</label>
+                <input type="email" id="input-email" required placeholder="nume@email.com">
             </div>
             <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-2">Parolă</label>
-                <input type="password" id="input-password" required placeholder="********" class="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 font-bold text-gray-800 focus:outline-none focus:border-brand-primary focus:bg-white transition-all">
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Parolă</label>
+                <input type="password" id="input-password" required placeholder="••••••••">
             </div>
 
-            <div id="register-fields" class="space-y-4 hidden">
+            <div id="register-fields" class="space-y-5 hidden">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-2">Numele Tău</label>
-                    <input type="text" id="input-name" placeholder="ex. Maria Popescu" class="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 font-bold text-gray-800 focus:outline-none focus:border-brand-primary focus:bg-white transition-all">
+                    <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Numele Tău</label>
+                    <input type="text" id="input-name" placeholder="ex. Maria Popescu">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-2">Telefon (Pt. WhatsApp)</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Telefon (Pt. WhatsApp)</label>
                     <div class="relative">
-                        <span class="absolute left-4 top-4 text-gray-400 font-bold">+40</span>
-                        <input type="tel" id="input-phone" placeholder="7xx xxx xxx" class="w-full bg-white border-2 border-gray-200 rounded-2xl pl-14 pr-5 py-4 font-bold text-gray-800 focus:outline-none focus:border-brand-primary focus:bg-white transition-all">
+                        <span class="absolute left-4 top-4 font-bold" style="color: var(--text-tertiary);">+40</span>
+                        <input type="tel" id="input-phone" placeholder="7xx xxx xxx" class="pl-14">
                     </div>
                 </div>
             </div>
 
-            <button type="submit" id="auth-btn" class="w-full bg-brand-primary text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-brand-primary-dark transition-all transform active:scale-95 mt-6 flex justify-center items-center gap-2">
+            <button type="submit" id="auth-btn" class="w-full btn-primary mt-8 flex justify-center items-center gap-3">
                 Intră în cont
                 <span class="material-icons-round">arrow_forward</span>
             </button>
-            
-            <div class="relative my-6">
+
+            <div class="relative my-8">
                 <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t border-gray-200"></div>
+                    <div class="w-full border-t" style="border-color: var(--glass-border);"></div>
                 </div>
                 <div class="relative flex justify-center text-sm">
-                    <span class="px-2 bg-brand-bg text-gray-400">sau continuă cu</span>
+                    <span class="px-3 text-xs uppercase font-semibold" style="background: var(--carbon); color: var(--text-tertiary);">sau continuă cu</span>
                 </div>
             </div>
 
-            <button type="button" onclick="loginWithGoogle()" class="w-full bg-white border-2 border-gray-200 text-gray-700 py-3 rounded-2xl font-bold text-base shadow-sm hover:bg-gray-50 transition-all flex justify-center items-center gap-2">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
-                Google
+            <button type="button" onclick="loginWithGoogle()" class="w-full glass-card py-4 font-bold text-base flex justify-center items-center gap-3 hover:scale-105 transition-transform">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6">
+                <span style="color: var(--text-primary);">Google</span>
             </button>
 
-            <p id="auth-toggle-text" class="text-xs text-center text-gray-500 mt-6">Nu ai cont? <span class="text-brand-primary font-bold cursor-pointer hover:underline" onclick="toggleAuthMode()">Înregistrează-te</span></p>
+            <p id="auth-toggle-text" class="text-sm text-center mt-6" style="color: var(--text-secondary);">Nu ai cont? <span class="font-bold cursor-pointer hover:underline" style="color: var(--neon-cyan);" onclick="toggleAuthMode()">Înregistrează-te</span></p>
         </form>
     </section>
 
     <!-- ================= VIEW: FEED ================= -->
     <section id="screen-feed" class="hidden flex-col h-full relative">
-        <header class="bg-brand-bg shadow-sm px-4 py-3 flex items-center gap-3 z-20 sticky top-0 border-b border-gray-200">
+        <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b" style="border-color: var(--glass-border); margin: 0;">
             <!-- Logo -->
-            <div class="w-10 h-10 bg-brand-primary text-white rounded-xl flex items-center justify-center flex-shrink-0">
-                <span class="material-icons-round">cottage</span>
+            <div class="w-11 h-11 flex items-center justify-center flex-shrink-0 glass-card rounded-full neon-glow p-2">
+                <span class="material-icons-round" style="color: var(--neon-cyan); font-size: 24px;">cottage</span>
             </div>
 
             <!-- Search Bar -->
-            <div class="search-bar relative">
-                <span class="material-icons-round text-gray-400">search</span>
-                <input type="text" placeholder="Cauta..." id="search-input">
-                <button id="clear-search-btn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600">
-                    <span class="material-icons-round">close</span>
+            <div class="search-bar relative flex-1">
+                <span class="material-icons-round">search</span>
+                <input type="text" placeholder="Caută în comunitate..." id="search-input">
+                <button id="clear-search-btn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 p-1.5 glass-card rounded-full">
+                    <span class="material-icons-round text-sm">close</span>
                 </button>
-                <div id="search-history" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-10">
+                <div id="search-history" class="hidden absolute top-full left-0 right-0 mt-2 glass-card shadow-lg z-10" style="border-radius: var(--radius-md);">
                 </div>
             </div>
 
             <!-- Notifications & Avatar -->
-            <button onclick="toggleModal('modal-notifications', true)" class="p-2 relative text-gray-500 hover:bg-gray-200 rounded-full transition-colors flex-shrink-0">
-                <span class="material-icons-round">notifications</span>
-                <span id="notif-badge" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-brand-bg"></span>
+            <button onclick="toggleModal('modal-notifications', true)" class="p-2.5 relative glass-card rounded-full transition-all hover:scale-110 flex-shrink-0 neon-glow">
+                <span class="material-icons-round" style="color: var(--text-secondary); font-size: 22px;">notifications</span>
+                <span id="notif-badge" class="hidden absolute top-0.5 right-0.5 w-3 h-3 rounded-full border-2" style="background: var(--neon-pink); border-color: var(--carbon);"></span>
             </button>
-            <img id="header-user-avatar" src="" class="w-10 h-10 rounded-full object-cover cursor-pointer flex-shrink-0 border-2 border-white" onclick="showScreen('profile')">
+            <div class="relative flex-shrink-0">
+                <div class="w-11 h-11 rounded-full p-0.5 neon-glow" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
+                    <img id="header-user-avatar" src="" class="w-full h-full rounded-full object-cover cursor-pointer" style="border: 2px solid var(--carbon);" onclick="showScreen('profile')">
+                </div>
+            </div>
         </header>
-        <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 hide-scrollbar">
-            <div class="mb-6 animate-fade-in">
-                <h2 id="user-display-name" class="text-2xl font-extrabold text-gray-900">Salut! 👋</h2>
-                <p class="text-gray-600">Iată noutățile din comunitatea ta astăzi.</p>
+        <div class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-28 hide-scrollbar">
+            <div class="mb-8 animate-fade-in">
+                <h2 id="user-display-name" class="text-3xl font-extrabold mb-2 holographic-text">Salut! 👋</h2>
+                <p style="color: var(--text-secondary); font-size: 15px;">Descoperă noutățile din comunitatea ta</p>
             </div>
 
             <!-- Category Cards -->
@@ -212,19 +218,21 @@
                 </div>
             </div>
 
-            <div id="feed-container" class="flex flex-col gap-2">
-                <div class="flex justify-center py-10"><span class="material-icons-round animate-spin text-brand-secondary text-3xl">refresh</span></div>
+            <div id="feed-container" class="flex flex-col gap-5">
+                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
             </div>
         </div>
     </section>
 
     <!-- ================= VIEW: PROFILE ================= -->
-    <section id="screen-profile" class="hidden flex-col h-full relative bg-white">
-        <div class="flex-1 overflow-y-auto hide-scrollbar pb-24">
-            <div class="bg-brand-bg p-6 flex flex-col items-center border-b border-gray-100">
-                <img id="profile-display-avatar" src="" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg mb-4 bg-gray-200">
-                <h2 id="profile-display-name" class="text-xl font-extrabold text-gray-900">User</h2>
-                <p class="text-sm text-gray-500">Membru al comunității</p>
+    <section id="screen-profile" class="hidden flex-col h-full relative">
+        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
+            <div class="p-8 flex flex-col items-center glass-card rounded-none border-0 border-b" style="border-color: var(--glass-border); margin: 0;">
+                <div class="w-28 h-28 rounded-full p-1 mb-5 neon-glow" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));">
+                    <img id="profile-display-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 3px solid var(--carbon); background: var(--graphite);">
+                </div>
+                <h2 id="profile-display-name" class="text-2xl font-extrabold mb-1" style="color: var(--text-primary);">User</h2>
+                <p class="text-sm font-medium" style="color: var(--text-tertiary);">Membru al comunității</p>
             </div>
 
             <div class="p-4 space-y-6">
@@ -289,55 +297,55 @@
     </section>
 
     <!-- ================= VIEW: ADMIN DASHBOARD ================= -->
-    <section id="screen-admin" class="hidden flex-col h-full relative bg-white">
-        <header class="bg-brand-primary shadow-lg px-4 py-4 flex items-center gap-3 z-20 sticky top-0">
-            <button onclick="showScreen('feed')" class="p-2 text-white hover:bg-white/20 rounded-full transition-colors">
-                <span class="material-icons-round">arrow_back</span>
+    <section id="screen-admin" class="hidden flex-col h-full relative">
+        <header class="glass-card px-5 py-5 flex items-center gap-4 z-20 sticky top-0 rounded-none border-0 border-b" style="border-color: var(--glass-border); margin: 0; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
+            <button onclick="showScreen('feed')" class="p-2.5 glass-card rounded-full transition-all hover:scale-110 neon-glow">
+                <span class="material-icons-round" style="color: var(--neon-cyan);">arrow_back</span>
             </button>
             <div class="flex-1">
-                <h2 class="text-xl font-extrabold text-white">Admin Dashboard</h2>
-                <p class="text-white/80 text-xs">Super-Admin Control Panel</p>
+                <h2 class="text-2xl font-extrabold mb-1 holographic-text">Admin Dashboard</h2>
+                <p class="text-xs font-semibold uppercase tracking-wide" style="color: var(--text-tertiary);">Super-Admin Control Panel</p>
             </div>
-            <span class="material-icons-round text-white text-3xl">admin_panel_settings</span>
+            <span class="material-icons-round text-4xl neon-glow" style="color: var(--neon-purple); filter: drop-shadow(0 0 15px var(--neon-purple));">admin_panel_settings</span>
         </header>
 
-        <div class="flex-1 overflow-y-auto hide-scrollbar pb-24">
+        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
             <!-- Stats Cards -->
-            <div class="p-4 grid grid-cols-3 gap-3">
-                <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-lg">
-                    <div class="text-2xl font-extrabold" id="admin-total-posts">0</div>
-                    <div class="text-xs opacity-90">Total Posts</div>
+            <div class="p-5 grid grid-cols-3 gap-4">
+                <div class="glass-card neon-glow" style="background: linear-gradient(135deg, rgba(0, 102, 255, 0.2) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
+                    <div class="text-3xl font-extrabold mb-1 holographic-text" id="admin-total-posts">0</div>
+                    <div class="text-[10px] uppercase font-bold tracking-wide" style="color: var(--text-tertiary);">Total Posts</div>
                 </div>
-                <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-4 shadow-lg">
-                    <div class="text-2xl font-extrabold" id="admin-total-users">0</div>
-                    <div class="text-xs opacity-90">Total Users</div>
+                <div class="glass-card neon-glow" style="background: linear-gradient(135deg, rgba(57, 255, 20, 0.2) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
+                    <div class="text-3xl font-extrabold mb-1 holographic-text" id="admin-total-users">0</div>
+                    <div class="text-[10px] uppercase font-bold tracking-wide" style="color: var(--text-tertiary);">Total Users</div>
                 </div>
-                <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-4 shadow-lg">
-                    <div class="text-2xl font-extrabold" id="admin-total-comments">0</div>
-                    <div class="text-xs opacity-90">Comments</div>
+                <div class="glass-card neon-glow" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(247, 37, 133, 0.1) 100%), var(--glass-light);">
+                    <div class="text-3xl font-extrabold mb-1 holographic-text" id="admin-total-comments">0</div>
+                    <div class="text-[10px] uppercase font-bold tracking-wide" style="color: var(--text-tertiary);">Comments</div>
                 </div>
             </div>
 
             <!-- Tabs -->
-            <div class="px-4 mb-4">
-                <div class="flex space-x-2 border-b border-gray-200 pb-2">
-                    <button id="admin-tab-posts" onclick="switchAdminTab('posts')" class="px-4 py-2 text-sm font-bold text-brand-primary border-b-2 border-brand-primary transition-all">
+            <div class="px-5 mb-5">
+                <div class="flex gap-3 glass-card p-2">
+                    <button id="admin-tab-posts" onclick="switchAdminTab('posts')" class="px-5 py-2.5 text-sm font-bold transition-all flex-1 rounded-full" style="background: var(--glass-medium); color: var(--neon-cyan); border: 1px solid var(--neon-cyan);">
                         Posts
                     </button>
-                    <button id="admin-tab-users" onclick="switchAdminTab('users')" class="px-4 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-all hover:text-gray-600">
+                    <button id="admin-tab-users" onclick="switchAdminTab('users')" class="px-5 py-2.5 text-sm font-bold transition-all flex-1 rounded-full" style="color: var(--text-tertiary);">
                         Users
                     </button>
-                    <button id="admin-tab-reports" onclick="switchAdminTab('reports')" class="px-4 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-all hover:text-gray-600">
+                    <button id="admin-tab-reports" onclick="switchAdminTab('reports')" class="px-5 py-2.5 text-sm font-bold transition-all flex-1 rounded-full" style="color: var(--text-tertiary);">
                         Reports
                     </button>
                 </div>
             </div>
 
             <!-- Posts Tab -->
-            <div id="admin-posts-tab" class="px-4 space-y-3">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-gray-800">All Posts</h3>
-                    <select id="admin-posts-filter" onchange="filterAdminPosts()" class="text-xs bg-gray-100 border-0 rounded-lg px-3 py-2 font-bold text-gray-700">
+            <div id="admin-posts-tab" class="px-5 space-y-3">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-lg" style="color: var(--text-primary);">All Posts</h3>
+                    <select id="admin-posts-filter" onchange="filterAdminPosts()" class="text-xs font-bold glass-card px-4 py-2.5" style="color: var(--text-primary); border-radius: var(--radius-full);">
                         <option value="all">All Categories</option>
                         <option value="sale">Bazar</option>
                         <option value="borrow">Cereri împrumut</option>
@@ -347,64 +355,66 @@
                         <option value="recommendation">Recomandări</option>
                     </select>
                 </div>
-                <div id="admin-posts-list" class="space-y-2">
-                    <div class="text-center py-8"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>
+                <div id="admin-posts-list" class="space-y-3">
+                    <div class="flex justify-center py-12"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
                 </div>
             </div>
 
             <!-- Users Tab -->
-            <div id="admin-users-tab" class="hidden px-4 space-y-3">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-gray-800">All Users</h3>
-                    <input type="text" id="admin-users-search" oninput="searchAdminUsers()" placeholder="Search users..." class="text-xs bg-gray-100 border-0 rounded-lg px-3 py-2">
+            <div id="admin-users-tab" class="hidden px-5 space-y-3">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-lg" style="color: var(--text-primary);">All Users</h3>
+                    <input type="text" id="admin-users-search" oninput="searchAdminUsers()" placeholder="Search users..." class="text-xs glass-card px-4 py-2.5" style="border-radius: var(--radius-full);">
                 </div>
-                <div id="admin-users-list" class="space-y-2">
-                    <div class="text-center py-8"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>
+                <div id="admin-users-list" class="space-y-3">
+                    <div class="flex justify-center py-12"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
                 </div>
             </div>
 
             <!-- Reports Tab -->
-            <div id="admin-reports-tab" class="hidden px-4">
-                <div class="text-center py-12 text-gray-400">
-                    <span class="material-icons-round text-5xl mb-2">report</span>
-                    <p class="text-sm">Reports feature coming soon</p>
+            <div id="admin-reports-tab" class="hidden px-5">
+                <div class="text-center py-16 glass-card">
+                    <span class="material-icons-round text-6xl mb-4" style="color: var(--text-tertiary);">report</span>
+                    <p class="text-sm font-semibold" style="color: var(--text-secondary);">Reports feature coming soon</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- ================= MODAL: PUBLIC PROFILE ================= -->
-    <div id="modal-public-profile" class="hidden fixed inset-0 z-[100] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-md h-[85vh] sm:h-[700px] rounded-t-3xl sm:rounded-3xl p-0 flex flex-col shadow-2xl overflow-hidden">
+    <div id="modal-public-profile" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
+        <div class="glass-card w-full sm:max-w-md h-[85vh] sm:h-[700px] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
             <!-- Header -->
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
-                <h3 class="font-extrabold text-gray-800 text-lg">Profil Vecin</h3>
-                <button onclick="toggleModal('modal-public-profile', false)" class="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200">
-                    <span class="material-icons-round">close</span>
+            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <h3 class="font-extrabold text-xl holographic-text">Profil Vecin</h3>
+                <button onclick="toggleModal('modal-public-profile', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
                 </button>
             </div>
-            
-            <div class="flex-1 overflow-y-auto bg-white">
+
+            <div class="flex-1 overflow-y-auto hide-scrollbar">
                 <!-- Profile Info -->
-                <div class="bg-brand-bg p-6 flex flex-col items-center border-b border-gray-100">
-                    <img id="public-prof-avatar" src="" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg mb-4 bg-gray-200">
-                    <h2 id="public-prof-name" class="text-xl font-extrabold text-gray-900">Nume Utilizator</h2>
-                    <p class="text-sm text-gray-500">Membru al comunității</p>
-                    
+                <div class="p-8 flex flex-col items-center glass-card rounded-none border-0 border-b" style="border-color: var(--glass-border); margin: 0;">
+                    <div class="w-28 h-28 rounded-full p-1 mb-5 neon-glow" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));">
+                        <img id="public-prof-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 3px solid var(--carbon); background: var(--graphite);">
+                    </div>
+                    <h2 id="public-prof-name" class="text-2xl font-extrabold mb-1" style="color: var(--text-primary);">Nume Utilizator</h2>
+                    <p class="text-sm font-medium" style="color: var(--text-tertiary);">Membru al comunității</p>
+
                     <!-- Optional: Action buttons -->
-                    <div id="public-prof-actions" class="mt-4 flex gap-2">
+                    <div id="public-prof-actions" class="mt-5 flex gap-3">
                         <!-- Injected via JS -->
                     </div>
                 </div>
 
                 <!-- User's Posts -->
-                <div class="p-4">
-                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span class="material-icons-round text-brand-primary">list_alt</span>
+                <div class="p-5">
+                    <h3 class="font-bold text-lg mb-5 flex items-center gap-3" style="color: var(--text-primary);">
+                        <span class="material-icons-round" style="color: var(--neon-cyan); filter: drop-shadow(0 0 8px var(--neon-cyan));">list_alt</span>
                         Anunțuri publicate
                     </h3>
-                    <div id="public-prof-posts" class="flex flex-col gap-3">
-                        <div class="text-center py-4"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>
+                    <div id="public-prof-posts" class="flex flex-col gap-4">
+                        <div class="flex justify-center py-8"><span class="material-icons-round animate-spin text-2xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
                     </div>
                 </div>
             </div>
@@ -412,61 +422,63 @@
     </div>
 
     <!-- ================= MODAL: NOTIFICATIONS ================= -->
-    <div id="modal-notifications" class="hidden fixed inset-0 z-[90] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-md h-[70vh] rounded-t-3xl sm:rounded-3xl p-0 flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
-                <h3 class="font-extrabold text-gray-800 text-lg flex items-center gap-2">
-                    <span class="material-icons-round text-brand-primary">notifications</span> Notificări
+    <div id="modal-notifications" class="hidden fixed inset-0 z-[90] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
+        <div class="glass-card w-full sm:max-w-md h-[70vh] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
+            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <h3 class="font-extrabold text-xl flex items-center gap-3 holographic-text">
+                    <span class="material-icons-round" style="filter: drop-shadow(0 0 8px var(--neon-cyan));">notifications</span> Notificări
                 </h3>
-                <button onclick="toggleModal('modal-notifications', false)" class="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200">
-                    <span class="material-icons-round">close</span>
+                <button onclick="toggleModal('modal-notifications', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
                 </button>
             </div>
-            <div id="notif-list" class="flex-1 overflow-y-auto bg-gray-50">
+            <div id="notif-list" class="flex-1 overflow-y-auto hide-scrollbar p-4">
                 <!-- Content injected via JS -->
             </div>
         </div>
     </div>
 
     <!-- ================= MODAL: COMMENTS ================= -->
-    <div id="modal-comments" class="hidden fixed inset-0 z-[80] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-md h-[80vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl p-0 flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10 shadow-sm">
-                <h3 class="font-extrabold text-gray-800 text-lg flex items-center gap-2">
-                    <span class="material-icons-round text-brand-primary">forum</span> Comentarii
+    <div id="modal-comments" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
+        <div class="glass-card w-full sm:max-w-md h-[80vh] sm:h-[600px] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
+            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <h3 class="font-extrabold text-xl flex items-center gap-3 holographic-text">
+                    <span class="material-icons-round" style="filter: drop-shadow(0 0 8px var(--neon-cyan));">forum</span> Comentarii
                 </h3>
-                <button onclick="toggleModal('modal-comments', false)" class="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
-                    <span class="material-icons-round">close</span>
+                <button onclick="toggleModal('modal-comments', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
                 </button>
             </div>
-            
-            <div id="comments-list" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+
+            <div id="comments-list" class="flex-1 overflow-y-auto hide-scrollbar p-5 space-y-4">
             </div>
 
-            <form id="comment-form" class="p-4 bg-white border-t border-gray-100 flex gap-2 items-center safe-pb">
-                <img id="comment-user-avatar" src="" class="w-8 h-8 rounded-full object-cover border border-gray-100 flex-shrink-0">
-                <input type="text" id="comment-input" required placeholder="Scrie un comentariu..." class="flex-1 bg-gray-100 border-0 rounded-full px-4 py-3 text-sm focus:ring-2 focus:ring-brand-primary focus:bg-white transition-all outline-none">
-                <button type="submit" class="bg-brand-primary text-white p-3 rounded-full hover:bg-brand-primary-dark transition-colors shadow-md flex-shrink-0 flex items-center justify-center">
-                    <span class="material-icons-round text-sm">send</span>
+            <form id="comment-form" class="p-5 glass-card flex gap-3 items-center safe-pb border-0 border-t rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <div class="w-10 h-10 rounded-full p-0.5 flex-shrink-0" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
+                    <img id="comment-user-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 2px solid var(--carbon);">
+                </div>
+                <input type="text" id="comment-input" required placeholder="Scrie un comentariu..." class="flex-1" style="border-radius: var(--radius-full);">
+                <button type="submit" class="fab-pulse p-3 rounded-full flex-shrink-0 flex items-center justify-center neon-glow">
+                    <span class="material-icons-round text-base" style="color: var(--void-black);">send</span>
                 </button>
             </form>
         </div>
     </div>
 
     <!-- ================= MODAL: CREATE POST ================= -->
-    <div id="modal-create" class="hidden fixed inset-0 z-[60] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-md h-[85vh] sm:h-auto sm:rounded-3xl rounded-t-3xl p-6 flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-extrabold text-gray-800">Postare Nouă</h2>
-                <button onclick="toggleModal('modal-create', false)" class="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200">
-                    <span class="material-icons-round">close</span>
+    <div id="modal-create" class="hidden fixed inset-0 z-[60] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
+        <div class="glass-card w-full sm:max-w-md h-[85vh] sm:h-auto p-6 flex flex-col neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-extrabold holographic-text">Postare Nouă</h2>
+                <button onclick="toggleModal('modal-create', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
                 </button>
             </div>
 
-            <form id="create-form" class="flex-1 overflow-y-auto hide-scrollbar space-y-4">
+            <form id="create-form" class="flex-1 overflow-y-auto hide-scrollbar space-y-5">
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Categorie</label>
-                    <select id="post-category" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
+                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Categorie</label>
+                    <select id="post-category" class="w-full">
                         <option value="sale">Bazar</option>
                         <option value="borrow">Cereri imprumut</option>
                         <option value="event">Evenimente</option>
@@ -477,85 +489,85 @@
                 </div>
 
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Titlu</label>
-                    <input type="text" id="post-title" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
+                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Titlu</label>
+                    <input type="text" id="post-title" required class="w-full">
                 </div>
 
                 <div id="section-price">
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Preț (RON)</label>
-                    <input type="number" id="post-price" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
+                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Preț (RON)</label>
+                    <input type="number" id="post-price" class="w-full">
                 </div>
 
-                <div id="section-event-details" class="hidden space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
+                <div id="section-event-details" class="hidden space-y-5">
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Dată</label>
-                            <input type="date" id="event-date" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                            <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Dată</label>
+                            <input type="date" id="event-date" class="w-full">
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Oră</label>
-                            <input type="time" id="event-time" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                            <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Oră</label>
+                            <input type="time" id="event-time" class="w-full">
                         </div>
                     </div>
-                    
+
                     <!-- NEW: Location Field -->
                     <div>
-                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center justify-between">
-                            <span>Locație (Adresă)</span>
-                            <button type="button" onclick="openLocationPickerForCreate()" class="text-brand-primary text-xs normal-case font-bold hover:underline flex items-center gap-1">
+                        <label class="text-xs font-bold uppercase mb-2 flex items-center justify-between">
+                            <span style="color: var(--text-tertiary);">Locație (Adresă)</span>
+                            <button type="button" onclick="openLocationPickerForCreate()" class="text-xs normal-case font-bold hover:underline flex items-center gap-1" style="color: var(--neon-cyan);">
                                 <span class="material-icons-round text-sm">location_on</span>
                                 Alege pe hartă
                             </button>
                         </label>
-                        <input type="text" id="event-location" placeholder="ex. Parcul Corbeanca sau adresă completă" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
+                        <input type="text" id="event-location" placeholder="ex. Parcul Corbeanca sau adresă completă" class="w-full">
                     </div>
 
                     <div>
-                         <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Tip Acces</label>
-                         <div class="flex items-center gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="event-cost" value="free" onclick="toggleEventPrice()" checked class="text-brand-primary focus:ring-brand-primary">
-                                <span class="text-sm font-bold text-gray-700">Gratuit</span>
+                         <label class="text-xs font-bold uppercase mb-3 block" style="color: var(--text-tertiary);">Tip Acces</label>
+                         <div class="flex items-center gap-6">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="event-cost" value="free" onclick="toggleEventPrice()" checked style="accent-color: var(--neon-cyan);">
+                                <span class="text-sm font-bold" style="color: var(--text-secondary);">Gratuit</span>
                             </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="event-cost" value="paid" id="event-paid" onclick="toggleEventPrice()" class="text-brand-primary focus:ring-brand-primary">
-                                <span class="text-sm font-bold text-gray-700">Cu Plată</span>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="event-cost" value="paid" id="event-paid" onclick="toggleEventPrice()" style="accent-color: var(--neon-cyan);">
+                                <span class="text-sm font-bold" style="color: var(--text-secondary);">Cu Plată</span>
                             </label>
                          </div>
-                         <div id="event-price-input" class="hidden mt-2">
-                             <input type="number" id="event-price-val" placeholder="Preț bilet (RON)" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
+                         <div id="event-price-input" class="hidden mt-3">
+                             <input type="number" id="event-price-val" placeholder="Preț bilet (RON)" class="w-full">
                          </div>
                     </div>
                 </div>
-                
+
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Telefon Contact (WhatsApp)</label>
+                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Telefon Contact (WhatsApp)</label>
                     <div class="relative">
-                        <span class="absolute left-4 top-3.5 text-gray-400 font-bold text-sm">+40</span>
-                        <input type="tel" id="post-phone" required class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-3 py-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
+                        <span class="absolute left-4 top-3.5 font-bold text-sm" style="color: var(--text-tertiary);">+40</span>
+                        <input type="tel" id="post-phone" required class="w-full pl-12">
                     </div>
-                    <p class="text-[10px] text-gray-400 mt-1">Obligatoriu pentru contact.</p>
+                    <p class="text-[10px] mt-2" style="color: var(--text-tertiary);">Obligatoriu pentru contact.</p>
                 </div>
 
                 <!-- Image Upload Section -->
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Imagine (Opțional)</label>
-                    <input type="file" id="post-image" accept="image/*" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
-                    <div id="post-image-preview-container" class="hidden mt-2 relative">
-                        <img id="post-image-preview" src="" class="w-full h-40 object-cover rounded-xl border border-gray-200">
-                        <button type="button" onclick="clearCreateImage()" class="absolute top-2 right-2 bg-white p-1 rounded-full shadow-md text-red-500 flex items-center justify-center">
-                            <span class="material-icons-round text-sm">close</span>
+                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Imagine (Opțional)</label>
+                    <input type="file" id="post-image" accept="image/*" class="w-full">
+                    <div id="post-image-preview-container" class="hidden mt-3 relative">
+                        <img id="post-image-preview" src="" class="w-full h-40 object-cover glass-card" style="border-radius: var(--radius-md);">
+                        <button type="button" onclick="clearCreateImage()" class="absolute top-2 right-2 glass-card p-2 rounded-full transition-all hover:scale-110" style="background: rgba(247, 37, 133, 0.3); border: 1px solid var(--neon-pink);">
+                            <span class="material-icons-round text-sm" style="color: var(--neon-pink);">close</span>
                         </button>
                     </div>
                 </div>
 
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Descriere</label>
-                    <textarea id="post-desc" rows="3" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-700 focus:outline-none focus:border-brand-primary"></textarea>
+                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Descriere</label>
+                    <textarea id="post-desc" rows="4" required class="w-full"></textarea>
                 </div>
 
-                <div class="pt-4">
-                    <button type="submit" id="btn-submit-post" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold text-lg shadow-lg hover:bg-brand-primary-dark transition-colors btn-shadow">Publică</button>
+                <div class="pt-5">
+                    <button type="submit" id="btn-submit-post" class="w-full btn-primary">Publică</button>
                 </div>
             </form>
         </div>
@@ -644,55 +656,55 @@
     </div>
 
     <!-- ================= MODAL: POST DETAILS ================= -->
-    <div id="modal-post-details" class="hidden fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-2xl max-h-[90vh] rounded-t-3xl sm:rounded-3xl p-0 flex flex-col shadow-2xl overflow-hidden">
+    <div id="modal-post-details" class="hidden fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
+        <div class="glass-card w-full sm:max-w-2xl max-h-[90vh] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
             <!-- Header -->
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10 sticky top-0">
-                <h3 class="font-extrabold text-gray-800 text-lg" id="post-detail-title">Detalii</h3>
-                <div class="flex gap-2">
-                    <button onclick="openCommentsFromDetail()" class="bg-gray-100 p-2 rounded-full text-gray-600 hover:bg-gray-200">
-                        <span class="material-icons-round">chat_bubble_outline</span>
+            <div class="p-5 glass-card flex justify-between items-center z-10 sticky top-0 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <h3 class="font-extrabold text-xl holographic-text" id="post-detail-title">Detalii</h3>
+                <div class="flex gap-3">
+                    <button onclick="openCommentsFromDetail()" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                        <span class="material-icons-round" style="color: var(--text-secondary);">chat_bubble_outline</span>
                     </button>
-                    <button onclick="toggleModal('modal-post-details', false)" class="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200">
-                        <span class="material-icons-round">close</span>
+                    <button onclick="toggleModal('modal-post-details', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                        <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
                     </button>
                 </div>
             </div>
 
             <!-- Content -->
-            <div id="post-detail-content" class="flex-1 overflow-y-auto p-6">
+            <div id="post-detail-content" class="flex-1 overflow-y-auto hide-scrollbar p-6">
                 <!-- Content will be populated dynamically -->
             </div>
         </div>
     </div>
 
     <!-- ================= MODAL: LOCATION PICKER ================= -->
-    <div id="modal-location-picker" class="hidden fixed inset-0 z-[80] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-2xl h-[80vh] rounded-t-3xl sm:rounded-3xl p-0 flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
-                <h3 class="font-extrabold text-gray-800 text-lg flex items-center gap-2">
-                    <span class="material-icons-round text-brand-primary">location_on</span> Alege Locația
+    <div id="modal-location-picker" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
+        <div class="glass-card w-full sm:max-w-2xl h-[80vh] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
+            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <h3 class="font-extrabold text-xl flex items-center gap-3 holographic-text">
+                    <span class="material-icons-round" style="filter: drop-shadow(0 0 8px var(--neon-cyan));">location_on</span> Alege Locația
                 </h3>
-                <button onclick="toggleModal('modal-location-picker', false)" class="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200">
-                    <span class="material-icons-round">close</span>
+                <button onclick="toggleModal('modal-location-picker', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
                 </button>
             </div>
 
-            <div class="p-4 bg-gray-50 border-b border-gray-100">
-                <input type="text" id="location-search" placeholder="Caută adresă..." class="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
-                <p class="text-xs text-gray-400 mt-2">Sau click pe hartă pentru a alege locația</p>
+            <div class="p-5 glass-card border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <input type="text" id="location-search" placeholder="Caută adresă..." class="w-full">
+                <p class="text-xs mt-3" style="color: var(--text-tertiary);">Sau click pe hartă pentru a alege locația</p>
             </div>
 
             <div class="flex-1 relative">
                 <div id="map" class="w-full h-full"></div>
             </div>
 
-            <div class="p-4 bg-white border-t border-gray-100">
-                <div class="mb-3">
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Locație Selectată</label>
-                    <input type="text" id="selected-location-display" readonly class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800">
+            <div class="p-5 glass-card border-0 border-t rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <div class="mb-4">
+                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Locație Selectată</label>
+                    <input type="text" id="selected-location-display" readonly class="w-full">
                 </div>
-                <button type="button" onclick="confirmLocationSelection()" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold shadow-lg hover:bg-brand-primary-dark transition-colors">
+                <button type="button" onclick="confirmLocationSelection()" class="w-full btn-primary">
                     Confirmă Locația
                 </button>
             </div>
@@ -700,34 +712,34 @@
     </div>
 
     <!-- ================= BOTTOM NAVIGATION ================= -->
-    <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg py-3 px-8 flex justify-around items-center z-40">
+    <nav id="bottom-nav" class="hidden z-40">
         <!-- Home -->
-        <button onclick="showScreen('feed')" id="nav-home" class="nav-btn flex flex-col items-center text-brand-primary transition-colors gap-1">
-            <span class="material-icons-round">home</span>
-            <span class="text-[10px] font-semibold">Acasa</span>
+        <button onclick="showScreen('feed')" id="nav-home" class="nav-btn flex flex-col items-center transition-all gap-1.5 relative" style="color: var(--neon-cyan);">
+            <span class="material-icons-round text-2xl">home</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide">Acasa</span>
         </button>
 
         <!-- Messages -->
-        <button class="nav-btn flex flex-col items-center text-gray-500 transition-colors gap-1">
-            <span class="material-icons-round">chat_bubble_outline</span>
-            <span class="text-[10px] font-semibold">Mesaje</span>
+        <button class="nav-btn flex flex-col items-center transition-all gap-1.5" style="color: var(--text-tertiary);">
+            <span class="material-icons-round text-2xl">chat_bubble_outline</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide">Mesaje</span>
         </button>
 
         <!-- FAB Create Button -->
-        <button onclick="toggleModal('modal-create', true)" class="bg-brand-primary text-white w-14 h-14 rounded-full -mt-8 shadow-xl flex items-center justify-center transform hover:scale-105 transition-transform fab-pulse">
-            <span class="material-icons-round text-3xl">add</span>
+        <button onclick="toggleModal('modal-create', true)" class="w-16 h-16 rounded-full -mt-10 flex items-center justify-center transform transition-all fab-pulse neon-glow">
+            <span class="material-icons-round text-4xl" style="color: var(--void-black); font-weight: bold;">add</span>
         </button>
 
         <!-- Profile -->
-        <button onclick="showScreen('profile')" id="nav-profile" class="nav-btn flex flex-col items-center text-gray-500 opacity-60 transition-all gap-1">
-            <span class="material-icons-round">person_outline</span>
-            <span class="text-[10px] font-semibold">Profil</span>
+        <button onclick="showScreen('profile')" id="nav-profile" class="nav-btn flex flex-col items-center transition-all gap-1.5" style="color: var(--text-tertiary);">
+            <span class="material-icons-round text-2xl">person_outline</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide">Profil</span>
         </button>
 
         <!-- Admin (Only for super-admins) -->
-        <button onclick="showScreen('admin')" id="nav-admin" class="hidden nav-btn flex-col items-center text-gray-500 opacity-60 transition-all gap-1">
-            <span class="material-icons-round">admin_panel_settings</span>
-            <span class="text-[10px] font-semibold">Admin</span>
+        <button onclick="showScreen('admin')" id="nav-admin" class="hidden nav-btn flex-col items-center transition-all gap-1.5" style="color: var(--text-tertiary);">
+            <span class="material-icons-round text-2xl">admin_panel_settings</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide">Admin</span>
         </button>
     </nav>
 </body>
