@@ -11,8 +11,10 @@
     <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     
-    <!-- Google Font: Nunito -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <!-- Firebase SDKs & App Logic -->
     <script type="module" src="app.js"></script>
@@ -22,14 +24,18 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Poppins', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
                         brand: {
-                            primary: '#3B82F6', // Blue 500
-                            secondary: '#10B981', // Emerald 500
-                            accent: '#F59E0B', // Amber 500
-                            bg: '#D3D8D6', // New background color
+                            primary: {
+                               light: '#3B82F6',
+                               DEFAULT: '#2563EB',
+                               dark: '#1D4ED8'
+                            },
+                            secondary: '#10B981', 
+                            accent: '#FBBF24',
+                            bg: '#F9FAFB',
                         }
                     },
                     keyframes: {
@@ -84,7 +90,7 @@
                 </div>
             </div>
 
-            <button type="submit" id="auth-btn" class="w-full bg-brand-primary text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all transform active:scale-95 mt-6 flex justify-center items-center gap-2">
+            <button type="submit" id="auth-btn" class="w-full bg-brand-primary text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-brand-primary-dark transition-all transform active:scale-95 mt-6 flex justify-center items-center gap-2">
                 Intră în cont
                 <span class="material-icons-round">arrow_forward</span>
             </button>
@@ -109,20 +115,29 @@
 
     <!-- ================= VIEW: FEED ================= -->
     <section id="screen-feed" class="hidden flex-col h-full relative">
-        <header class="bg-[#85A89A] shadow-sm px-4 py-3 flex justify-between items-center z-20 sticky top-0">
-            <div class="flex items-center gap-3">
-                <img src="https://placehold.co/40x40/3B82F6/FFFFFF?text=C" alt="Logo" class="w-10 h-10 rounded-lg">
+        <header class="bg-brand-bg shadow-sm px-4 py-3 flex items-center gap-3 z-20 sticky top-0 border-b border-gray-200">
+            <!-- Logo -->
+            <div class="w-10 h-10 bg-brand-primary text-white rounded-xl flex items-center justify-center flex-shrink-0">
+                <span class="material-icons-round">cottage</span>
             </div>
-            <div class="flex items-center gap-2">
-                <button class="p-2 text-gray-500 hover:text-gray-700 transition-colors">
-                    <span class="material-icons-round">search</span>
+
+            <!-- Search Bar -->
+            <div class="search-bar relative">
+                <span class="material-icons-round text-gray-400">search</span>
+                <input type="text" placeholder="Cauta..." id="search-input">
+                <button id="clear-search-btn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-round">close</span>
                 </button>
-                <button onclick="toggleModal('modal-notifications', true)" class="p-2 relative text-gray-500 hover:text-gray-700 transition-colors">
-                    <span class="material-icons-round">notifications</span>
-                    <span id="notif-badge" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
-                <img id="header-user-avatar" src="" class="w-9 h-9 rounded-full object-cover cursor-pointer" onclick="showScreen('profile')">
+                <div id="search-history" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-10">
+                </div>
             </div>
+
+            <!-- Notifications & Avatar -->
+            <button onclick="toggleModal('modal-notifications', true)" class="p-2 relative text-gray-500 hover:bg-gray-200 rounded-full transition-colors flex-shrink-0">
+                <span class="material-icons-round">notifications</span>
+                <span id="notif-badge" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-brand-bg"></span>
+            </button>
+            <img id="header-user-avatar" src="" class="w-10 h-10 rounded-full object-cover cursor-pointer flex-shrink-0 border-2 border-white" onclick="showScreen('profile')">
         </header>
         <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 hide-scrollbar">
             <div class="mb-6 animate-fade-in">
@@ -130,30 +145,64 @@
                 <p class="text-gray-600">Iată ce vând vecinii tăi astăzi.</p>
             </div>
 
-            <!-- Filter Pills -->
-            <div class="mb-4 -mx-4 px-4">
-                <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-                    <button onclick="filterPosts('all')" data-filter="all" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-brand-primary text-white shadow-md">
-                        Toate
-                    </button>
-                    <button onclick="filterPosts('sale')" data-filter="sale" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
-                        🛍️ Bazar
-                    </button>
-                    <button onclick="filterPosts('borrow')" data-filter="borrow" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
-                        🤝 Cereri împrumut
-                    </button>
-                    <button onclick="filterPosts('event')" data-filter="event" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
-                        📅 Evenimente
-                    </button>
-                    <button onclick="filterPosts('local')" data-filter="local" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
-                        📍 Interes Local
-                    </button>
-                    <button onclick="filterPosts('business')" data-filter="business" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
-                        💼 Afaceri locale
-                    </button>
-                    <button onclick="filterPosts('recommendation')" data-filter="recommendation" class="filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200">
-                        ⭐ Recomandări
-                    </button>
+            <!-- Category Cards -->
+            <div class="mb-6 -mx-4 px-4">
+                <div class="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
+                    <!-- Toate -->
+                    <div onclick="filterPosts('all')" data-filter="all" class="category-card active">
+                        <div class="category-icon">
+                            <span class="material-icons-round">apps</span>
+                        </div>
+                        <div class="category-label">Toate</div>
+                    </div>
+
+                    <!-- Bazar -->
+                    <div onclick="filterPosts('sale')" data-filter="sale" class="category-card">
+                        <div class="category-icon">
+                            <span class="material-icons-round">storefront</span>
+                        </div>
+                        <div class="category-label">Bazar</div>
+                    </div>
+
+                    <!-- Cereri Împrumut -->
+                    <div onclick="filterPosts('borrow')" data-filter="borrow" class="category-card">
+                        <div class="category-icon">
+                            <span class="material-icons-round">volunteer_activism</span>
+                        </div>
+                        <div class="category-label">Cereri<br>împrumut</div>
+                    </div>
+
+                    <!-- Evenimente -->
+                    <div onclick="filterPosts('event')" data-filter="event" class="category-card">
+                        <div class="category-icon">
+                            <span class="material-icons-round">event</span>
+                        </div>
+                        <div class="category-label">Evenimente</div>
+                    </div>
+
+                    <!-- Interes Local -->
+                    <div onclick="filterPosts('local')" data-filter="local" class="category-card">
+                        <div class="category-icon">
+                            <span class="material-icons-round">location_on</span>
+                        </div>
+                        <div class="category-label">Interes<br>Local</div>
+                    </div>
+
+                    <!-- Afaceri Locale -->
+                    <div onclick="filterPosts('business')" data-filter="business" class="category-card">
+                        <div class="category-icon">
+                            <span class="material-icons-round">business_center</span>
+                        </div>
+                        <div class="category-label">Afaceri<br>locale</div>
+                    </div>
+
+                    <!-- Recomandări -->
+                    <div onclick="filterPosts('recommendation')" data-filter="recommendation" class="category-card">
+                        <div class="category-icon">
+                            <span class="material-icons-round">star_border</span>
+                        </div>
+                        <div class="category-label">Recomandări</div>
+                    </div>
                 </div>
             </div>
 
@@ -306,7 +355,7 @@
             <form id="comment-form" class="p-4 bg-white border-t border-gray-100 flex gap-2 items-center safe-pb">
                 <img id="comment-user-avatar" src="" class="w-8 h-8 rounded-full object-cover border border-gray-100 flex-shrink-0">
                 <input type="text" id="comment-input" required placeholder="Scrie un comentariu..." class="flex-1 bg-gray-100 border-0 rounded-full px-4 py-3 text-sm focus:ring-2 focus:ring-brand-primary focus:bg-white transition-all outline-none">
-                <button type="submit" class="bg-brand-primary text-white p-3 rounded-full hover:bg-red-400 transition-colors shadow-md flex-shrink-0 flex items-center justify-center">
+                <button type="submit" class="bg-brand-primary text-white p-3 rounded-full hover:bg-brand-primary-dark transition-colors shadow-md flex-shrink-0 flex items-center justify-center">
                     <span class="material-icons-round text-sm">send</span>
                 </button>
             </form>
@@ -481,7 +530,7 @@
                 </div>
 
                 <div class="pt-4">
-                    <button type="submit" id="btn-submit-post" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold text-lg shadow-lg hover:bg-red-400 transition-colors btn-shadow">Publică</button>
+                    <button type="submit" id="btn-submit-post" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold text-lg shadow-lg hover:bg-brand-primary-dark transition-colors btn-shadow">Publică</button>
                 </div>
             </form>
         </div>
@@ -626,7 +675,7 @@
                     <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Locație Selectată</label>
                     <input type="text" id="selected-location-display" readonly class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800">
                 </div>
-                <button type="button" onclick="confirmLocationSelection()" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold shadow-lg hover:bg-red-400 transition-colors">
+                <button type="button" onclick="confirmLocationSelection()" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold shadow-lg hover:bg-brand-primary-dark transition-colors">
                     Confirmă Locația
                 </button>
             </div>
@@ -634,26 +683,32 @@
     </div>
 
     <!-- ================= BOTTOM NAVIGATION ================= -->
-    <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 bg-white shadow-lg py-2 px-6 rounded-t-3xl flex justify-around items-center z-40">
-        <button onclick="showScreen('feed')" id="nav-home" class="nav-btn flex flex-col items-center text-brand-primary transition-colors">
-            <span class="material-icons-round text-2xl">home</span>
-            <span class="text-[10px] font-bold">Acasă</span>
+    <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg py-3 px-8 flex justify-around items-center z-40">
+        <!-- Home -->
+        <button onclick="showScreen('feed')" id="nav-home" class="nav-btn flex flex-col items-center text-brand-primary transition-colors gap-1">
+            <span class="material-icons-round">home</span>
+            <span class="text-[10px] font-semibold">Acasa</span>
         </button>
-        <button onclick="showScreen('map')" id="nav-map" class="nav-btn flex flex-col items-center text-gray-400 transition-colors">
-            <span class="material-icons-round text-2xl">map</span>
-            <span class="text-[10px] font-bold">Hartă</span>
+
+        <!-- Messages -->
+        <button class="nav-btn flex flex-col items-center text-gray-500 transition-colors gap-1">
+            <span class="material-icons-round">chat_bubble_outline</span>
+            <span class="text-[10px] font-semibold">Mesaje</span>
         </button>
-        <button onclick="toggleModal('modal-create', true)" class="bg-brand-primary text-white w-14 h-14 rounded-full -mt-8 shadow-xl border-4 border-white flex items-center justify-center transform hover:scale-105 transition-transform">
+
+        <!-- FAB Create Button -->
+        <button onclick="toggleModal('modal-create', true)" class="bg-brand-primary text-white w-14 h-14 rounded-full -mt-8 shadow-xl flex items-center justify-center transform hover:scale-105 transition-transform fab-pulse">
             <span class="material-icons-round text-3xl">add</span>
         </button>
-        <button class="nav-btn flex flex-col items-center text-gray-400">
-            <span class="material-icons-round text-2xl">chat</span>
-            <span class="text-[10px] font-bold">Mesaje</span>
+
+        <!-- Profile -->
+        <button onclick="showScreen('profile')" id="nav-profile" class="nav-btn flex flex-col items-center text-gray-500 opacity-60 transition-all gap-1">
+            <span class="material-icons-round">person_outline</span>
+            <span class="text-[10px] font-semibold">Profil</span>
         </button>
-        <button onclick="showScreen('profile')" id="nav-profile" class="nav-btn flex flex-col items-center text-gray-400 transition-colors">
-            <span class="material-icons-round text-2xl">person</span>
-            <span class="text-[10px] font-bold">Profil</span>
-        </button>
+
+        <!-- Placeholder for balance -->
+        <div class="w-6"></div>
     </nav>
 </body>
 </html>

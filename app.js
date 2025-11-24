@@ -5,6 +5,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, setDoc, doc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // --- FIREBASE CONFIGURATION ---
 const myRealFirebaseConfig = {
@@ -35,6 +36,7 @@ if (myRealFirebaseConfig.apiKey !== "API_KEY_AICI") {
 const app = initializeApp(activeConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 const COLL_POSTS = 'posts';
 const COLL_USERS = 'users';
@@ -99,9 +101,9 @@ let unsubscribePublicProfilePosts = null;
 let editingPostId = null;
 let currentCommentingPostId = null;
 let currentViewingPostId = null;
-let pendingAvatarBase64 = null;
-let pendingPostImageBase64 = null;
-let pendingEditPostImageBase64 = null;
+let pendingAvatarFile = null;
+let pendingPostImageFile = null;
+let pendingEditPostImageFile = null;
 let isRegisterMode = false;
 let activePostType = 'sale';
 let activeProfileTab = 'my-posts';
@@ -114,6 +116,8 @@ let allPostsCache = []; // Store all loaded posts
 
 // Filter state
 let activeFilter = 'all'; // 'all', 'sale', 'borrow', 'event', 'local', 'business', 'recommendation'
+let isSearching = false;
+let searchHistory = [];
 
 // --- DOM ELEMENTS ---
 const screens = {
@@ -133,6 +137,11 @@ const feedContainer = document.getElementById('feed-container');
 const myPostsContainer = document.getElementById('my-posts-container');
 const interestedContainer = document.getElementById('interested-container');
 const userDisplayName = document.getElementById('user-display-name');
+const searchInput = document.getElementById('search-input');
+const clearSearchBtn = document.getElementById('clear-search-btn');
+const searchHistoryContainer = document.getElementById('search-history');
+
+
 
 // Forms
 const loginForm = document.getElementById('login-form');
@@ -155,7 +164,11 @@ function showScreen(screenName) {
     });
     document.getElementById('bottom-nav').classList.add('hidden');
 
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-brand-primary', 'text-gray-300'));
+    // Reset all nav buttons to inactive state
+    document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.add('opacity-60');
+        b.classList.remove('opacity-100');
+    });
 
     if (screenName === 'login') {
         screens.login.classList.remove('hidden');
@@ -165,14 +178,18 @@ function showScreen(screenName) {
         screens.feed.classList.remove('hidden');
         screens.feed.classList.add('flex');
         document.getElementById('bottom-nav').classList.remove('hidden');
-        document.getElementById('nav-home').classList.replace('text-gray-300', 'text-brand-primary');
+        const navHome = document.getElementById('nav-home');
+        navHome.classList.remove('opacity-60');
+        navHome.classList.add('opacity-100');
         loadPosts();
         setupInfiniteScroll();
     } else if (screenName === 'profile') {
         screens.profile.classList.remove('hidden');
         screens.profile.classList.add('flex');
         document.getElementById('bottom-nav').classList.remove('hidden');
-        document.getElementById('nav-profile').classList.replace('text-gray-300', 'text-brand-primary');
+        const navProfile = document.getElementById('nav-profile');
+        navProfile.classList.remove('opacity-60');
+        navProfile.classList.add('opacity-100');
         loadUserProfile();
         switchProfileTab('my-posts');
     }
@@ -361,12 +378,25 @@ function compressImage(file) {
                 canvas.height = img.height * scaleSize;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', 0.7));
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.7);
             }
             img.onerror = (err) => reject(err);
         }
         reader.onerror = (err) => reject(err);
     });
+}
+
+
+async function uploadImage(file, path) {
+    const storageRef = ref(storage, path);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return {
+        url: downloadURL,
+        path: snapshot.ref.fullPath
+    };
 }
 
 // Image Handlers
@@ -377,9 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.target.files[0];
             if (!file) return;
             try {
-                const base64 = await compressImage(file);
-                pendingAvatarBase64 = base64;
-                document.getElementById('profile-display-avatar').src = base64;
+                const compressedFile = await compressImage(file);
+                pendingAvatarFile = compressedFile;
+                document.getElementById('profile-display-avatar').src = URL.createObjectURL(compressedFile);
             } catch (err) {
                 showToast("Eroare la procesare img", "error");
             }
@@ -392,9 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.target.files[0];
             if(!file) return;
             try {
-                const base64 = await compressImage(file);
-                pendingPostImageBase64 = base64;
-                document.getElementById('post-image-preview').src = base64;
+                const compressedFile = await compressImage(file);
+                pendingPostImageFile = compressedFile;
+                document.getElementById('post-image-preview').src = URL.createObjectURL(compressedFile);
                 document.getElementById('post-image-preview-container').classList.remove('hidden');
             } catch (err) {
                 console.error(err);
@@ -409,9 +439,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.target.files[0];
             if(!file) return;
             try {
-                const base64 = await compressImage(file);
-                pendingEditPostImageBase64 = base64;
-                document.getElementById('edit-image-preview').src = base64;
+                const compressedFile = await compressImage(file);
+                pendingEditPostImageFile = compressedFile;
+                document.getElementById('edit-image-preview').src = URL.createObjectURL(compressedFile);
                 document.getElementById('edit-image-preview-container').classList.remove('hidden');
             } catch (err) {
                 console.error(err);
@@ -419,17 +449,111 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Search functionality
+    searchInput.addEventListener('input', handleSearch);
+    clearSearchBtn.addEventListener('click', clearSearch);
+    searchInput.addEventListener('focus', renderSearchHistory);
+    searchInput.addEventListener('blur', () => {
+        // Delay hiding to allow click on history item
+        setTimeout(() => {
+            searchHistoryContainer.classList.add('hidden');
+        }, 100);
+    });
+
+    loadSearchHistory();
+
+    function handleSearch(e) {
+        const query = e.target.value.trim();
+        if (query.length > 0) {
+            clearSearchBtn.classList.remove('hidden');
+            searchHistoryContainer.classList.add('hidden');
+        } else {
+            clearSearchBtn.classList.add('hidden');
+            renderSearchHistory();
+        }
+        performSearch(query);
+    }
+
+    function clearSearch() {
+        searchInput.value = '';
+        clearSearchBtn.classList.add('hidden');
+        performSearch('');
+        renderSearchHistory();
+    }
+
+    function performSearch(query) {
+        if (query.length === 0) {
+            isSearching = false;
+            renderPosts(allPostsCache);
+            return;
+        }
+
+        isSearching = true;
+        const lowerCaseQuery = query.toLowerCase();
+        const filteredPosts = allPostsCache.filter(post => {
+            const titleMatch = post.title.toLowerCase().includes(lowerCaseQuery);
+            const descriptionMatch = post.description.toLowerCase().includes(lowerCaseQuery);
+            const authorMatch = post.authorName.toLowerCase().includes(lowerCaseQuery);
+            return titleMatch || descriptionMatch || authorMatch;
+        });
+
+        renderPosts(filteredPosts);
+        if(query.length > 2) saveSearchQuery(query);
+    }
+
+    function saveSearchQuery(query) {
+        searchHistory = searchHistory.filter(q => q !== query);
+        searchHistory.unshift(query);
+        if (searchHistory.length > 5) {
+            searchHistory.pop();
+        }
+        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    }
+
+    function loadSearchHistory() {
+        const history = localStorage.getItem('searchHistory');
+        if (history) {
+            searchHistory = JSON.parse(history);
+        }
+    }
+
+    function renderSearchHistory() {
+        searchHistoryContainer.innerHTML = '';
+        if (searchHistory.length === 0) {
+            searchHistoryContainer.classList.add('hidden');
+            return;
+        }
+
+        searchHistoryContainer.classList.remove('hidden');
+        const ul = document.createElement('ul');
+        ul.className = 'py-2';
+
+        searchHistory.forEach(query => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+            li.textContent = query;
+            li.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                searchInput.value = query;
+                performSearch(query);
+                searchHistoryContainer.classList.add('hidden');
+            });
+            ul.appendChild(li);
+        });
+        searchHistoryContainer.appendChild(ul);
+    }
 });
 
 window.clearCreateImage = () => {
-    pendingPostImageBase64 = null;
+    pendingPostImageFile = null;
     document.getElementById('post-image').value = '';
     document.getElementById('post-image-preview').src = '';
     document.getElementById('post-image-preview-container').classList.add('hidden');
 };
 
 window.clearEditImage = () => {
-    pendingEditPostImageBase64 = null;
+    pendingEditPostImageFile = null;
     document.getElementById('edit-post-image').value = '';
     document.getElementById('edit-image-preview').src = '';
     document.getElementById('edit-image-preview-container').classList.add('hidden');
@@ -446,15 +570,24 @@ profileForm.addEventListener('submit', async (e) => {
     btn.innerHTML = '<span class="material-icons-round animate-spin">refresh</span> Se salvează...';
     try {
         const newData = { name, phone, email };
-        if (pendingAvatarBase64) newData.avatar = pendingAvatarBase64;
+        if (pendingAvatarFile) {
+            if (userProfile.avatarPath) {
+                const oldRef = ref(storage, userProfile.avatarPath);
+                await deleteObject(oldRef);
+            }
+            const { url, path } = await uploadImage(pendingAvatarFile, `avatars/${currentUser.uid}`);
+            newData.avatar = url;
+            newData.avatarPath = path;
+        }
         await updateDoc(getDocPath(COLL_USERS, currentUser.uid), newData);
         userProfile = { ...userProfile, ...newData };
         localStorage.setItem('user_name', name);
         loadUserProfile();
         showToast('Profil actualizat!');
-        pendingAvatarBase64 = null;
+        pendingAvatarFile = null;
     } catch (e) {
         showToast('Eroare la salvare.', 'error');
+        console.error(e);
     } finally {
         btn.disabled = false;
         btn.innerText = 'Salvează Modificările';
@@ -478,13 +611,13 @@ function loadUserProfile() {
 window.filterPosts = function(filterType) {
     activeFilter = filterType;
 
-    // Update pill UI
-    document.querySelectorAll('.filter-pill').forEach(pill => {
-        const pillFilter = pill.getAttribute('data-filter');
-        if (pillFilter === filterType) {
-            pill.className = 'filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-brand-primary text-white shadow-md';
+    // Update category card UI
+    document.querySelectorAll('.category-card').forEach(card => {
+        const cardFilter = card.getAttribute('data-filter');
+        if (cardFilter === filterType) {
+            card.classList.add('active');
         } else {
-            pill.className = 'filter-pill flex-shrink-0 px-4 py-2 rounded-full font-bold text-sm transition-all bg-white text-gray-600 border-2 border-gray-100 hover:border-gray-200';
+            card.classList.remove('active');
         }
     });
 
@@ -549,6 +682,13 @@ function renderPosts(posts) {
     const loadMoreBtn = document.getElementById('load-more-btn');
     if (loadMoreBtn) loadMoreBtn.remove();
 
+    if (posts.length === 0) {
+        feedContainer.innerHTML = `<div class="text-center py-10 text-gray-400">Niciun rezultat găsit.</div>`;
+        return;
+    }
+
+    feedContainer.innerHTML = ''; // Clear the container before rendering posts
+
     posts.forEach(post => {
         if (post.type === 'event') {
             feedContainer.appendChild(createEventCard(post));
@@ -557,7 +697,9 @@ function renderPosts(posts) {
         }
     });
 
-    showLoadMoreButton();
+    if (!isSearching) {
+        showLoadMoreButton();
+    }
 }
 
 function showLoadMoreButton() {
@@ -571,7 +713,7 @@ function showLoadMoreButton() {
     loadMoreBtn.id = 'load-more-btn';
     loadMoreBtn.className = 'flex justify-center py-6';
     loadMoreBtn.innerHTML = `
-        <button onclick="loadMorePosts()" class="bg-brand-primary text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-red-400 transition-colors flex items-center gap-2">
+        <button onclick="loadMorePosts()" class="bg-brand-primary text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-brand-primary-dark transition-colors flex items-center gap-2">
             <span id="load-more-text">Încarcă mai multe</span>
             <span class="material-icons-round">expand_more</span>
         </button>
@@ -824,6 +966,17 @@ createForm.addEventListener('submit', async (e) => {
     btn.innerText = 'Se postează...';
 
     try {
+        const newPostRef = doc(getCollectionRef(COLL_POSTS));
+        const postId = newPostRef.id;
+
+        let imageUrl = null;
+        let imagePath = null;
+        if (pendingPostImageFile) {
+            const { url, path } = await uploadImage(pendingPostImageFile, `posts/${postId}/image`);
+            imageUrl = url;
+            imagePath = path;
+        }
+
         let formData = {
             title: document.getElementById('post-title').value,
             description: document.getElementById('post-desc').value,
@@ -834,7 +987,8 @@ createForm.addEventListener('submit', async (e) => {
             timestamp: serverTimestamp(),
             type: activePostType,
             commentCount: 0,
-            image: pendingPostImageBase64 || null
+            image: imageUrl,
+            imagePath: imagePath
         };
 
         if (activePostType === 'sale') {
@@ -852,11 +1006,12 @@ createForm.addEventListener('submit', async (e) => {
             formData.interestedUsers = [];
         }
 
-        await addDoc(getCollectionRef(COLL_POSTS), formData);
+        await setDoc(newPostRef, formData);
         showToast('Postarea a fost publicată!');
         toggleModal('modal-create', false);
         createForm.reset();
         showScreen('feed');
+        pendingPostImageFile = null;
     } catch (error) {
         console.error(error);
         showToast('Eroare la publicare.', 'error');
@@ -1070,8 +1225,14 @@ if (editForm) {
                 description: document.getElementById('edit-desc').value
             };
             
-            if (pendingEditPostImageBase64) {
-                updateData.image = pendingEditPostImageBase64;
+            if (pendingEditPostImageFile) {
+                if (post.imagePath) {
+                    const oldRef = ref(storage, post.imagePath);
+                    await deleteObject(oldRef);
+                }
+                const { url, path } = await uploadImage(pendingEditPostImageFile, `posts/${editingPostId}/image`);
+                updateData.image = url;
+                updateData.imagePath = path;
             }
 
             if (post.type === 'event') {
@@ -1090,6 +1251,7 @@ if (editForm) {
             showToast('Postarea a fost actualizată!');
             toggleModal('modal-edit', false);
             editingPostId = null;
+            pendingEditPostImageFile = null;
         } catch (error) {
             console.error('Error updating post:', error);
             showToast('Eroare la actualizare', 'error');
@@ -1243,52 +1405,52 @@ window.viewUserProfile = async (targetUid) => {
 
 // --- CARD CREATION FUNCTIONS ---
 function createPostCard(post) {
-    const categoryConfig = {
-        'kids': { icon: 'child_friendly', color: 'bg-blue-100 text-blue-600' },
-        'home': { icon: 'chair', color: 'bg-orange-100 text-orange-600' },
-        'fashion': { icon: 'checkroom', color: 'bg-pink-100 text-pink-600' },
-        'tech': { icon: 'devices', color: 'bg-purple-100 text-purple-600' },
-        'other': { icon: 'auto_awesome', color: 'bg-gray-100 text-gray-600' }
-    };
-    const conf = categoryConfig[post.category] || categoryConfig['other'];
     const article = document.createElement('article');
-    article.className = "bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-xl transition-shadow duration-300";
+    article.className = "post-card-new";
 
     const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
     const commentCount = post.commentCount || 0;
-
-    let cleanPhone = (post.authorPhone || '').replace(/\D/g, '');
-    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
-    if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
-    const waHref = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Salut, pt anunțul: ' + post.title)}` : 'javascript:void(0)';
-    const waStyle = cleanPhone ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed';
+    const likeCount = post.likeCount || 0;
 
     article.innerHTML = `
-        ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover">` : ''}
-        <div class="p-4">
-            <div class="flex items-center gap-3 mb-3">
-                <img src="${avatarSrc}" class="w-10 h-10 rounded-full object-cover">
-                <div>
-                    <p class="font-bold text-sm text-gray-800 hover:underline" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">${post.authorName}</p>
-                    <p class="text-xs text-gray-500">${date}</p>
+        <!-- Post Header -->
+        <div class="post-header">
+            <div class="post-author" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
+                <img src="${avatarSrc}" alt="${post.authorName}">
+                <div class="post-author-info">
+                    <h4>${post.authorName}</h4>
+                    <p>${date}</p>
                 </div>
             </div>
-            <h3 class="font-bold text-xl mb-2 leading-tight">${post.title}</h3>
-            <p class="text-gray-600 text-base leading-relaxed mb-4 line-clamp-3">${post.description}</p>
-            <div class="flex justify-between items-center">
-                <span class="font-extrabold text-2xl text-brand-primary">${post.price} RON</span>
-                <div class="flex gap-2">
-                    <button onclick="event.stopPropagation(); openComments('${post.id}')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors">
-                        <span class="material-icons-round text-lg">chat_bubble_outline</span>
-                        ${commentCount > 0 ? `<span>${commentCount}</span>` : ''}
-                    </button>
-                    <a href="${waHref}" target="${cleanPhone ? '_blank' : ''}" onclick="event.stopPropagation()" class="${waStyle} px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors">
-                        <span class="material-icons-round text-lg">chat</span>
-                        <span>WhatsApp</span>
-                    </a>
-                </div>
-            </div>
+            <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
+                <span class="material-icons-round">more_horiz</span>
+            </button>
+        </div>
+
+        <!-- Post Image -->
+        ${post.image ? `<img src="${post.image}" class="post-image" alt="${post.title}">` : ''}
+
+        <!-- Post Actions -->
+        <div class="post-actions">
+            <button class="action-btn" onclick="event.stopPropagation()">
+                <span class="material-icons-round">favorite_border</span>
+                ${likeCount > 0 ? `<span>${likeCount}</span>` : ''}
+            </button>
+            <button class="action-btn" onclick="event.stopPropagation(); openComments('${post.id}')">
+                <span class="material-icons-round">chat_bubble_outline</span>
+                ${commentCount > 0 ? `<span>${commentCount}</span>` : ''}
+            </button>
+            <button class="action-btn ml-auto" onclick="event.stopPropagation()">
+                <span class="material-icons-round">bookmark_border</span>
+            </button>
+        </div>
+
+        <!-- Post Content -->
+        <div class="post-content">
+            <h3>${post.title}</h3>
+            <p>${post.description}</p>
+            ${post.price ? `<p class="price">${post.price} RON</p>` : ''}
         </div>
     `;
 
@@ -1299,16 +1461,8 @@ function createPostCard(post) {
 }
 
 function createEventCard(post) {
-    const categoryConfig = {
-        'workshop': { icon: 'brush', label: 'Workshop' },
-        'playdate': { icon: 'toys', label: 'Playdate' },
-        'culture': { icon: 'theater_comedy', label: 'Cultură' },
-        'sport': { icon: 'sports_soccer', label: 'Sport' },
-        'other': { icon: 'event', label: 'Eveniment' }
-    };
-    const conf = categoryConfig[post.category] || categoryConfig['other'];
     const article = document.createElement('article');
-    article.className = "bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-xl transition-shadow duration-300";
+    article.className = "post-card-new";
 
     const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
@@ -1318,48 +1472,54 @@ function createEventCard(post) {
 
     const eventDateObj = new Date(post.eventDate);
     const dateStr = eventDateObj.toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric', month: 'long' });
-    const priceDisplay = post.isFree ? "Gratuit" : `${post.price} RON`;
-    const btnClass = isInterested ? "bg-brand-primary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200";
-    const btnIcon = isInterested ? "favorite" : "favorite_border";
-
     const location = post.eventLocation || 'Corbeanca';
 
     article.innerHTML = `
-        ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover">` : ''}
-        <div class="p-4">
-            <div class="flex items-center gap-3 mb-3">
-                <img src="${avatarSrc}" class="w-10 h-10 rounded-full object-cover">
-                <div>
-                    <p class="font-bold text-sm text-gray-800 hover:underline" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">${post.authorName}</p>
-                    <p class="text-xs text-gray-500">${date}</p>
+        <!-- Post Header -->
+        <div class="post-header">
+            <div class="post-author" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
+                <img src="${avatarSrc}" alt="${post.authorName}">
+                <div class="post-author-info">
+                    <h4>${post.authorName}</h4>
+                    <p>${date}</p>
                 </div>
             </div>
-            <h3 class="font-bold text-xl mb-2 leading-tight">${post.title}</h3>
-            <div class="flex items-center gap-2 text-gray-600 text-sm mb-2">
-                <span class="material-icons-round text-lg">calendar_today</span>
+            <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
+                <span class="material-icons-round">more_horiz</span>
+            </button>
+        </div>
+
+        <!-- Post Image -->
+        ${post.image ? `<img src="${post.image}" class="post-image" alt="${post.title}">` : ''}
+
+        <!-- Post Actions -->
+        <div class="post-actions">
+            <button class="action-btn ${isInterested ? 'liked' : ''}" onclick="event.stopPropagation(); toggleInterest('${post.id}')" id="interest-btn-${post.id}">
+                <span class="material-icons-round">${isInterested ? 'favorite' : 'favorite_border'}</span>
+                ${interestedCount > 0 ? `<span>${interestedCount}</span>` : ''}
+            </button>
+            <button class="action-btn" onclick="event.stopPropagation(); openComments('${post.id}')">
+                <span class="material-icons-round">chat_bubble_outline</span>
+                ${commentCount > 0 ? `<span>${commentCount}</span>` : ''}
+            </button>
+            <button class="action-btn ml-auto" onclick="event.stopPropagation()">
+                <span class="material-icons-round">bookmark_border</span>
+            </button>
+        </div>
+
+        <!-- Post Content -->
+        <div class="post-content">
+            <h3>${post.title}</h3>
+            <div class="flex items-center gap-2 text-gray-500 text-sm mb-2">
+                <span class="material-icons-round">calendar_today</span>
                 <span>${dateStr}, ${post.eventTime}</span>
             </div>
-            <div class="flex items-center gap-2 text-gray-600 text-sm mb-4">
-                <span class="material-icons-round text-lg">location_on</span>
+            <div class="flex items-center gap-2 text-gray-500 text-sm mb-3">
+                <span class="material-icons-round">location_on</span>
                 <span>${location}</span>
             </div>
-            <p class="text-gray-600 text-base leading-relaxed mb-4 line-clamp-3">${post.description}</p>
-            <div class="flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-1 text-gray-600">
-                        <span class="material-icons-round text-lg text-pink-500">group</span>
-                        <span class="font-bold text-sm">${interestedCount}</span>
-                    </div>
-                    <div class="flex items-center gap-1 text-gray-600">
-                        <span class="material-icons-round text-lg">chat_bubble_outline</span>
-                        <span class="font-bold text-sm">${commentCount}</span>
-                    </div>
-                </div>
-                <button id="interest-btn-${post.id}" onclick="event.stopPropagation(); toggleInterest('${post.id}')" class="${btnClass} px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors duration-300">
-                    <span class="material-icons-round text-lg">${btnIcon}</span>
-                    <span>Interesat</span>
-                </button>
-            </div>
+            <p>${post.description}</p>
+            ${!post.isFree && post.price ? `<p class="price">${post.price} RON</p>` : post.isFree ? `<p class="price">Gratuit</p>` : ''}
         </div>
     `;
 
@@ -1567,10 +1727,22 @@ function createMyPostCard(post) {
 window.deletePost = async (id) => {
     if (!confirm('Sigur vrei să ștergi?')) return;
     try {
-        await deleteDoc(getDocPath(COLL_POSTS, id));
+        const postRef = getDocPath(COLL_POSTS, id);
+        const postSnap = await getDoc(postRef);
+
+        if (postSnap.exists()) {
+            const post = postSnap.data();
+            if (post.imagePath) {
+                const imageRef = ref(storage, post.imagePath);
+                await deleteObject(imageRef);
+            }
+        }
+
+        await deleteDoc(postRef);
         showToast('Șters.');
     } catch (e) {
         showToast('Eroare', 'error');
+        console.error(e);
     }
 };
 
