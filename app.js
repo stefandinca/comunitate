@@ -239,6 +239,7 @@ onAuthStateChanged(auth, async (user) => {
         if (docSnap.exists()) {
             userProfile = docSnap.data();
             userDisplayName.textContent = `Salut, ${userProfile.name}!`;
+            document.getElementById('header-user-avatar').src = userProfile.avatar || `https://ui-avatars.com/api/?name=${userProfile.name}&background=random`;
             showScreen('feed');
         } else {
             userDisplayName.textContent = `Salut!`;
@@ -1251,7 +1252,7 @@ function createPostCard(post) {
     };
     const conf = categoryConfig[post.category] || categoryConfig['other'];
     const article = document.createElement('article');
-    article.className = "bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-lg transition-shadow";
+    article.className = "bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-xl transition-shadow duration-300";
 
     const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
@@ -1261,33 +1262,30 @@ function createPostCard(post) {
     if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
     if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
     const waHref = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Salut, pt anunțul: ' + post.title)}` : 'javascript:void(0)';
-    const waStyle = cleanPhone ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-100 text-gray-400 cursor-not-allowed';
+    const waStyle = cleanPhone ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed';
 
     article.innerHTML = `
-        <div class="${conf.color.replace('text-', 'bg-').replace('100', '50')} px-4 py-2 flex items-center gap-2 text-sm font-bold ${conf.color.split(' ')[1]}">
-            <span class="material-icons-round text-sm">${conf.icon}</span>
-            <span>Vânzare</span>
-        </div>
+        ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover">` : ''}
         <div class="p-4">
-            <div class="flex items-center gap-3 mb-3" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
-                <img src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover bg-gray-100">
+            <div class="flex items-center gap-3 mb-3">
+                <img src="${avatarSrc}" class="w-10 h-10 rounded-full object-cover">
                 <div>
-                    <p class="font-bold text-sm text-gray-800 hover:underline">${post.authorName}</p>
-                    <p class="text-xs text-gray-400">${date}</p>
+                    <p class="font-bold text-sm text-gray-800 hover:underline" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">${post.authorName}</p>
+                    <p class="text-xs text-gray-500">${date}</p>
                 </div>
             </div>
-            ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-3 border border-gray-100">` : ''}
-            <h3 class="font-bold text-lg mb-1 leading-tight">${post.title}</h3>
-            <p class="text-gray-600 text-base leading-relaxed mb-3 line-clamp-3">${post.description}</p>
-            <div class="flex justify-between items-center mt-4">
-                <span class="font-extrabold text-xl text-brand-primary">${post.price} RON</span>
+            <h3 class="font-bold text-xl mb-2 leading-tight">${post.title}</h3>
+            <p class="text-gray-600 text-base leading-relaxed mb-4 line-clamp-3">${post.description}</p>
+            <div class="flex justify-between items-center">
+                <span class="font-extrabold text-2xl text-brand-primary">${post.price} RON</span>
                 <div class="flex gap-2">
-                    <button onclick="event.stopPropagation(); openComments('${post.id}')" class="bg-gray-50 text-gray-600 px-3 py-2 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-gray-100">
-                        <span class="material-icons-round text-sm">chat_bubble_outline</span>
-                        ${commentCount > 0 ? commentCount : ''}
+                    <button onclick="event.stopPropagation(); openComments('${post.id}')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors">
+                        <span class="material-icons-round text-lg">chat_bubble_outline</span>
+                        ${commentCount > 0 ? `<span>${commentCount}</span>` : ''}
                     </button>
-                    <a href="${waHref}" target="${cleanPhone ? '_blank' : ''}" onclick="event.stopPropagation()" class="${waStyle} px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-colors">
-                        <span class="material-icons-round text-sm">chat</span> WhatsApp
+                    <a href="${waHref}" target="${cleanPhone ? '_blank' : ''}" onclick="event.stopPropagation()" class="${waStyle} px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors">
+                        <span class="material-icons-round text-lg">chat</span>
+                        <span>WhatsApp</span>
                     </a>
                 </div>
             </div>
@@ -1310,7 +1308,7 @@ function createEventCard(post) {
     };
     const conf = categoryConfig[post.category] || categoryConfig['other'];
     const article = document.createElement('article');
-    article.className = "bg-white rounded-3xl shadow-sm border border-purple-100 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-lg transition-shadow";
+    article.className = "bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden mb-4 animate-fade-in cursor-pointer hover:shadow-xl transition-shadow duration-300";
 
     const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
@@ -1321,60 +1319,45 @@ function createEventCard(post) {
     const eventDateObj = new Date(post.eventDate);
     const dateStr = eventDateObj.toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric', month: 'long' });
     const priceDisplay = post.isFree ? "Gratuit" : `${post.price} RON`;
-    const btnClass = isInterested ? "bg-purple-600 text-white shadow-md transform scale-105" : "bg-purple-50 text-purple-700 hover:bg-purple-100";
+    const btnClass = isInterested ? "bg-brand-primary text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200";
     const btnIcon = isInterested ? "favorite" : "favorite_border";
 
     const location = post.eventLocation || 'Corbeanca';
 
     article.innerHTML = `
-        <div class="bg-purple-50 px-4 py-2 flex items-center justify-between text-sm font-bold text-purple-700">
-            <div class="flex items-center gap-2">
-                <span class="material-icons-round text-sm">${conf.icon}</span>
-                <span>${conf.label}</span>
-            </div>
-            <span class="text-xs bg-white px-2 py-0.5 rounded-md border border-purple-100">${priceDisplay}</span>
-        </div>
+        ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover">` : ''}
         <div class="p-4">
-            <div class="flex items-center gap-3 mb-3" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
-                <img src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover bg-gray-100">
+            <div class="flex items-center gap-3 mb-3">
+                <img src="${avatarSrc}" class="w-10 h-10 rounded-full object-cover">
                 <div>
-                    <p class="font-bold text-sm text-gray-800 hover:underline">${post.authorName}</p>
-                    <p class="text-xs text-gray-400">acum ${date}</p>
+                    <p class="font-bold text-sm text-gray-800 hover:underline" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">${post.authorName}</p>
+                    <p class="text-xs text-gray-500">${date}</p>
                 </div>
             </div>
-            ${post.image ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-3 border border-gray-100">` : ''}
-            <h3 class="font-bold text-lg mb-1 leading-tight">${post.title}</h3>
-
-            <div class="flex gap-4 my-3">
-                <div class="flex items-center gap-2 text-gray-700 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 w-full">
-                    <span class="material-icons-round text-purple-400">calendar_today</span>
-                    <div class="leading-tight">
-                        <p class="text-xs text-gray-400 font-bold uppercase">Când?</p>
-                        <p class="text-sm font-bold capitalize">${dateStr}, ${post.eventTime}</p>
+            <h3 class="font-bold text-xl mb-2 leading-tight">${post.title}</h3>
+            <div class="flex items-center gap-2 text-gray-600 text-sm mb-2">
+                <span class="material-icons-round text-lg">calendar_today</span>
+                <span>${dateStr}, ${post.eventTime}</span>
+            </div>
+            <div class="flex items-center gap-2 text-gray-600 text-sm mb-4">
+                <span class="material-icons-round text-lg">location_on</span>
+                <span>${location}</span>
+            </div>
+            <p class="text-gray-600 text-base leading-relaxed mb-4 line-clamp-3">${post.description}</p>
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-1 text-gray-600">
+                        <span class="material-icons-round text-lg text-pink-500">group</span>
+                        <span class="font-bold text-sm">${interestedCount}</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-gray-600">
+                        <span class="material-icons-round text-lg">chat_bubble_outline</span>
+                        <span class="font-bold text-sm">${commentCount}</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="flex items-center gap-2 text-gray-700 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 mb-3">
-                <span class="material-icons-round text-red-400">location_on</span>
-                <p class="text-sm font-bold truncate">${location}</p>
-            </div>
-
-            <p class="text-gray-600 text-base leading-relaxed mb-4 line-clamp-3">${post.description}</p>
-
-            <div class="flex justify-between items-center mt-2 border-t border-gray-50 pt-3">
-                <div class="flex items-center gap-1 text-xs text-gray-500 font-bold">
-                    <button onclick="event.stopPropagation(); openComments('${post.id}')" class="flex items-center gap-1 hover:text-brand-primary transition-colors p-1">
-                        <span class="material-icons-round text-sm">chat_bubble_outline</span>
-                        ${commentCount > 0 ? commentCount : ''}
-                    </button>
-                    <span class="mx-1 text-gray-300">|</span>
-                    <span class="material-icons-round text-sm text-pink-400">group</span>
-                    <span id="interest-count-${post.id}">${interestedCount}</span>
-                </div>
-                <button id="interest-btn-${post.id}" onclick="event.stopPropagation(); toggleInterest('${post.id}')" class="${btnClass} px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-200">
-                    <span class="material-icons-round text-sm">${btnIcon}</span>
-                    Interes
+                <button id="interest-btn-${post.id}" onclick="event.stopPropagation(); toggleInterest('${post.id}')" class="${btnClass} px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors duration-300">
+                    <span class="material-icons-round text-lg">${btnIcon}</span>
+                    <span>Interesat</span>
                 </button>
             </div>
         </div>
