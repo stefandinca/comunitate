@@ -12,7 +12,6 @@ let unsubscribeMyPosts = null;
 let unsubscribeInterested = null;
 let unsubscribeSaved = null;
 let unsubscribeComments = null;
-let unsubscribeNotifs = null;
 let unsubscribeConversations = null;
 let unsubscribeMessages = null;
 let unsubscribePublicProfilePosts = null;
@@ -113,14 +112,6 @@ export function getUnsubscribeComments() {
 
 export function setUnsubscribeComments(fn) {
     unsubscribeComments = fn;
-}
-
-export function getUnsubscribeNotifs() {
-    return unsubscribeNotifs;
-}
-
-export function setUnsubscribeNotifs(fn) {
-    unsubscribeNotifs = fn;
 }
 
 export function getUnsubscribeConversations() {

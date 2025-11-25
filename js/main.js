@@ -47,7 +47,6 @@ import {
     openComments,
     openCommentsFromDetail,
     openEditModal,
-    listenForNotifications,
     initPostDetailsModule
 } from './features/post-details.js';
 
@@ -62,12 +61,6 @@ import {
     adminToggleRole,
     adminDeleteComment
 } from './features/admin.js';
-
-// Notifications module
-import {
-    initPushNotifications,
-    requestNotificationPermission
-} from './features/notifications.js';
 
 // Businesses module
 import {
@@ -126,9 +119,6 @@ window.adminDeleteUser = adminDeleteUser;
 window.adminToggleRole = adminToggleRole;
 window.adminDeleteComment = adminDeleteComment;
 
-// Notifications
-window.requestNotificationPermission = requestNotificationPermission;
-
 // ==================== APPLICATION INITIALIZATION ====================
 
 /**
@@ -156,20 +146,8 @@ async function initializeApp() {
         initProfileModule();
         initMessagingModule();
         initPostDetailsModule();
-        initPushNotifications();
         initBusinessDetailsModule();
         initPostsModule();
-
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                .then((registration) => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                }).catch((error) => {
-                    console.error('Service Worker registration failed:', error);
-                });
-        }
-
 
         // Setup search functionality
         loadSearchHistory();
@@ -193,7 +171,6 @@ async function initializeApp() {
                 showScreen('feed');
                 loadPosts();
                 loadUserProfile();
-                listenForNotifications();
             },
             // onLogout callback
             () => {
@@ -220,6 +197,5 @@ export {
     loadPosts,
     loadUserProfile,
     loadConversations,
-    loadAdminDashboard,
-    listenForNotifications
+    loadAdminDashboard
 };

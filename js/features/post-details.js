@@ -18,14 +18,12 @@ import { ref, deleteObject } from 'https://www.gstatic.com/firebasejs/11.6.1/fir
 
 // Internal imports
 import { getCollectionRef, getDocPath, storage } from '../config/firebase-init.js';
-import { COLL_POSTS, COLL_COMMENTS, COLL_NOTIF } from '../config/constants.js';
+import { COLL_POSTS, COLL_COMMENTS } from '../config/constants.js';
 import {
     getCurrentUser,
     getUserProfile,
     getUnsubscribeComments,
     setUnsubscribeComments,
-    getUnsubscribeNotifs,
-    setUnsubscribeNotifs,
     getCurrentCommentingPostId,
     setCurrentCommentingPostId,
     getCurrentViewingPostId,
@@ -397,97 +395,10 @@ export async function handleCommentSubmit(e) {
             commentCount: increment(1)
         });
 
-        const postSnap = await getDoc(postRef);
-        if (postSnap.exists()) {
-            const postData = postSnap.data();
-            await addDoc(getCollectionRef(COLL_NOTIF), {
-                recipientUid: postData.uid,
-                senderName: userProfile?.name || 'Cineva',
-                postId: currentCommentingPostId,
-                postTitle: postData.title,
-                type: 'comment',
-                read: false,
-                timestamp: serverTimestamp()
-            });
-        }
-
     } catch (error) {
         console.error(error);
         showToast('Eroare la trimitere.', 'error');
     }
-}
-
-// ==================== NOTIFICATIONS ====================
-
-/**
- * Listen for notifications
- */
-export function listenForNotifications() {
-    const currentUser = getCurrentUser();
-    const unsubscribeNotifs = getUnsubscribeNotifs();
-    if (unsubscribeNotifs) unsubscribeNotifs();
-    if (!currentUser) return;
-
-    const q = query(
-        getCollectionRef(COLL_NOTIF),
-        where('recipientUid', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        let unreadCount = 0;
-        const notifList = document.getElementById('notif-list');
-        if (!notifList) return;
-
-        notifList.innerHTML = '';
-
-        const notifs = [];
-        snapshot.forEach(doc => notifs.push({ id: doc.id, ...doc.data() }));
-        notifs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-        if (notifs.length === 0) {
-            notifList.innerHTML = '<div class="text-center py-8 text-gray-400">Nu ai notificări.</div>';
-        }
-
-        notifs.forEach(n => {
-            if (!n.read) unreadCount++;
-            const div = document.createElement('div');
-            div.className = `p-4 border-b border-gray-100 flex items-start gap-3 ${n.read ? 'bg-white' : 'bg-blue-50'}`;
-            div.innerHTML = `
-                <div class="bg-blue-100 p-2 rounded-full text-blue-600">
-                    <span class="material-icons-round text-sm">comment</span>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm text-gray-800"><span class="font-bold">${n.senderName}</span> a comentat la postarea ta <span class="font-bold">"${n.postTitle}"</span>.</p>
-                    <p class="text-xs text-gray-400 mt-1">acum ${timeAgo(new Date(n.timestamp?.seconds * 1000))}</p>
-                </div>
-                ${!n.read ? '<div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>' : ''}
-            `;
-
-            div.onclick = async () => {
-                if (!n.read) {
-                    try {
-                        await updateDoc(getDocPath(COLL_NOTIF, n.id), { read: true });
-                    } catch (e) {
-                        console.error("Err mark read", e);
-                    }
-                }
-                window.toggleModal('modal-notifications', false);
-                openComments(n.postId);
-            };
-            notifList.appendChild(div);
-        });
-
-        const bellBadge = document.getElementById('notif-badge');
-        if (bellBadge) {
-            if (unreadCount > 0) {
-                bellBadge.classList.remove('hidden');
-            } else {
-                bellBadge.classList.add('hidden');
-            }
-        }
-    });
-
-    setUnsubscribeNotifs(unsubscribe);
 }
 
 // ==================== EDIT POST ====================
@@ -684,7 +595,4 @@ export function initPostDetailsModule() {
     if (editForm) {
         editForm.addEventListener('submit', handleEditFormSubmit);
     }
-
-    // Start listening for notifications
-    listenForNotifications();
 }
