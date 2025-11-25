@@ -54,11 +54,10 @@ export async function loadAdminDashboard() {
         setAdminUsers(users);
 
         // Count comments
-        let totalComments = 0;
-        for (const post of allPosts) {
-            const commentsSnap = await getDocs(collection(db, COLL_COMMENTS, post.id, 'comments'));
-            totalComments += commentsSnap.size;
-        }
+        let totalComments;
+        const commentsQuery = query(collection(db, COLL_COMMENTS));
+        const commentsSnap = await getDocs(commentsQuery);
+        totalComments = commentsSnap.size;
 
         // Update stats
         document.getElementById('admin-total-posts').textContent = allPosts.length;
