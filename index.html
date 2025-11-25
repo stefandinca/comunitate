@@ -2,8 +2,8 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Corbeanca Community</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corbeanca Community - Conectează-te cu vecinii tăi</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,15 +16,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <script type="module">
-        // Load Google Maps API with key from config
-        import { GOOGLE_MAPS_API_KEY } from './config.js';
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async`;
-        document.head.appendChild(script);
-    </script>
-    <script type="module" src="app.js"></script>
-
     <script>
         tailwind.config = {
             theme: {
@@ -35,23 +26,14 @@
                     colors: {
                         brand: {
                             primary: {
-                               light: '#3B82F6',
-                               DEFAULT: '#2563EB',
-                               dark: '#1D4ED8'
+                               light: '#E56B50',
+                               DEFAULT: '#D2553B',
+                               dark: '#B84A33'
                             },
-                            secondary: '#10B981', 
-                            accent: '#FBBF24',
-                            bg: '#F9FAFB',
+                            secondary: '#F5F1ED',
+                            accent: '#FEF7F0',
+                            bg: '#FBF8F5',
                         }
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.4s ease-out forwards',
                     }
                 }
             }
@@ -59,692 +41,517 @@
     </script>
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="landing-style.css">
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #FEF7F0 0%, #FBF8F5 100%);
+        }
+        
+        .feature-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .stat-counter {
+            animation: countUp 2s ease-out;
+        }
+        
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col relative">
+<body class="bg-brand-bg">
 
-    <!-- ================= VIEW: LOGIN ================= -->
-    <section id="screen-login" class="hidden flex-col h-full items-center justify-center p-6 z-50 relative">
-        <div class="text-center mb-10 animate-fade-in">
-            <div class="w-24 h-24 mx-auto flex items-center justify-center mb-6 relative neon-glow" style="perspective: 1000px;">
-                <div class="glass-card rounded-full p-5">
-                    <span class="material-icons-round text-6xl holographic-text">groups</span>
-                </div>
-            </div>
-            <h1 id="auth-title" class="text-4xl font-extrabold mb-3 holographic-text">Bine ai revenit!</h1>
-            <p style="color: var(--text-secondary);">Conectează-te la comunitatea ta</p>
-        </div>
-        <form id="login-form" class="w-full max-w-md space-y-5 glass-card p-8">
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Email</label>
-                <input type="email" id="input-email" required placeholder="nume@email.com">
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Parolă</label>
-                <input type="password" id="input-password" required placeholder="••••••••">
-            </div>
-
-            <div id="register-fields" class="space-y-5 hidden">
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Numele Tău</label>
-                    <input type="text" id="input-name" placeholder="ex. Maria Popescu">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider mb-2 ml-2" style="color: var(--text-tertiary);">Telefon (Pt. WhatsApp)</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-4 font-bold" style="color: var(--text-tertiary);">+40</span>
-                        <input type="tel" id="input-phone" placeholder="7xx xxx xxx" class="pl-14">
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-brand-secondary rounded-full flex items-center justify-center">
+                        <span class="material-icons-round text-3xl text-brand-primary">cottage</span>
                     </div>
-                </div>
-            </div>
-
-            <button type="submit" id="auth-btn" class="w-full btn-primary mt-8 flex justify-center items-center gap-3">
-                Intră în cont
-                <span class="material-icons-round">arrow_forward</span>
-            </button>
-
-            <div class="relative my-8">
-                <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t" style="border-color: var(--glass-border);"></div>
-                </div>
-                <div class="relative flex justify-center text-sm">
-                    <span class="px-3 text-xs uppercase font-semibold" style=" color: var(--text-tertiary);">sau continuă cu</span>
-                </div>
-            </div>
-
-            <button type="button" onclick="loginWithGoogle()" class="w-full glass-card py-4 my-4 font-bold text-base flex justify-center items-center gap-3 hover:scale-105 transition-transform">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6">
-                <span style="color: var(--text-primary);">Google</span>
-            </button>
-
-            <p id="auth-toggle-text" class="text-sm text-center mt-6" style="color: var(--text-secondary);">Nu ai cont? <span class="font-bold cursor-pointer hover:underline" style="color: var(--neon-cyan);" onclick="toggleAuthMode()">Înregistrează-te</span></p>
-        </form>
-    </section>
-
-    <!-- ================= VIEW: FEED ================= -->
-    <section id="screen-feed" class="hidden flex-col h-full relative">
-        <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b" style="border-color: var(--glass-border); margin: 0;">
-            <!-- Logo 
-            <div class="w-11 h-11 flex items-center justify-center flex-shrink-0 glass-card rounded-full neon-glow p-2">
-                <span class="material-icons-round" style="color: var(--neon-cyan); font-size: 24px;">cottage</span>
-            </div>-->
-
-            <!-- Search Bar -->
-            <div class="search-bar relative flex-1 shrink">
-                
-                <input type="text"  placeholder="Caută în comunitate..." id="search-input">
-                <button id="clear-search-btn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 p-1.5 glass-card rounded-full">
-                    <span class="material-icons-round text-sm">close</span>
-                </button>
-                <div id="search-history" class="hidden absolute top-full left-0 right-0 mt-2 glass-card shadow-lg z-10">
-                </div>
-            </div>
-
-            <!-- Notifications & Avatar -->
-            <button onclick="toggleModal('modal-notifications', true)" class="p-2.5 relative glass-card rounded-full transition-all hover:scale-110 flex-shrink-0 neon-glow">
-                <span class="material-icons-round" style="color: var(--text-secondary); font-size: 22px;">notifications</span>
-                <span id="notif-badge" class="hidden absolute top-0.5 right-0.5 w-3 h-3 rounded-full border-2" style="background: var(--neon-pink); border-color: var(--carbon);"></span>
-            </button>
-            <div class="relative flex-shrink-0">
-                <div class="w-11 h-11 rounded-full p-0.5 neon-glow" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
-                    <img id="header-user-avatar" src="" class="w-full h-full rounded-full object-cover cursor-pointer" style="border: 2px solid var(--carbon);" onclick="showScreen('profile')">
-                </div>
-            </div>
-        </header>
-        <div class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-28 hide-scrollbar">
-            <div class="mb-8 animate-fade-in">
-                <h2 id="user-display-name" class="text-3xl font-extrabold mb-2 holographic-text">Salut! 👋</h2>
-                <p style="color: var(--text-secondary); font-size: 15px;">Descoperă noutățile din comunitatea ta</p>
-            </div>
-
-            <!-- Category Dropdown -->
-            <div class="mb-6 px-4">
-                <div class="relative">
-                    <select id="category-filter" onchange="filterPosts(this.value)" class="category-dropdown w-full">
-                        <option value="all">📋 Toate</option>
-                        <option value="sale">🏪 Bazar</option>
-                        <option value="borrow">🤝 Cereri Împrumut</option>
-                        <option value="event">📅 Evenimente</option>
-                        <option value="local">📍 Interes Local</option>
-                        <option value="business">💼 Afaceri Locale</option>
-                        <option value="recommendation">⭐ Recomandări</option>
-                    </select>
-                    <span class="material-icons-round category-dropdown-icon">expand_more</span>
-                </div>
-            </div>
-
-            <div id="feed-container" class="flex flex-col gap-5">
-                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan);">refresh</span></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ================= VIEW: PROFILE ================= -->
-    <section id="screen-profile" class="hidden flex-col h-full relative">
-        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
-            <div class="p-8 flex flex-col items-center glass-card rounded-none border-0 border-b" style="border-color: var(--glass-border); margin: 0;">
-                <div class="w-28 h-28 rounded-full p-1 mb-5 neon-glow" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));">
-                    <img id="profile-display-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 3px solid var(--carbon); background: var(--graphite);">
-                </div>
-                <h2 id="profile-display-name" class="text-2xl font-extrabold mb-1" style="color: var(--text-primary);">User</h2>
-                <p class="text-sm font-medium" style="color: var(--text-tertiary);">Membru al comunității</p>
-            </div>
-
-            <div class="p-4 space-y-6">
-                <!-- Edit Form -->
-                <div class="bg-white">
-                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span class="material-icons-round text-brand-secondary">manage_accounts</span> Date Personale
-                    </h3>
-                    <form id="profile-form" class="space-y-4">
-                        <!-- Same profile form fields as before -->
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Schimbă Poza (Upload)</label>
-                            <input type="file" id="prof-avatar-file" accept="image/*" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-sm text-gray-800 focus:border-brand-primary focus:outline-none">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Nume</label>
-                                <input type="text" id="prof-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-sm text-gray-800 focus:border-brand-primary focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Telefon</label>
-                                <input type="tel" id="prof-phone" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-sm text-gray-800 focus:border-brand-primary focus:outline-none">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Email</label>
-                            <input type="email" id="prof-email" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-sm text-gray-800 focus:border-brand-primary focus:outline-none" disabled>
-                        </div>
-                        <button type="submit" id="btn-save-profile" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-gray-700 transition-colors">
-                            Salvează Modificările
-                        </button>
-                    </form>
-                </div>
-
-                <hr class="border-gray-100">
-
-                <!-- TABS for Lists -->
-                <div>
-                    <div class="flex space-x-4 border-b border-gray-100 pb-2 mb-4">
-                        <button id="tab-btn-my" onclick="switchProfileTab('my-posts')" class="text-sm font-bold text-brand-primary border-b-2 border-brand-primary pb-1 transition-all">
-                            Postările Mele
-                        </button>
-                        <button id="tab-btn-int" onclick="switchProfileTab('interested')" class="text-sm font-bold text-gray-400 border-b-2 border-transparent pb-1 transition-all hover:text-gray-600">
-                            Evenimente Salvate
-                        </button>
-                    </div>
-
-                    <!-- My Posts Container -->
-                    <div id="my-posts-container" class="flex flex-col gap-3">
-                        <div class="text-center py-4"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>
-                    </div>
-
-                    <!-- Interested Events Container (Hidden by default) -->
-                    <div id="interested-container" class="hidden flex-col gap-3">
-                        <div class="text-center py-4"><span class="material-icons-round animate-spin text-gray-300">refresh</span></div>
-                    </div>
-                </div>
-                
-                <button onclick="logout()" class="w-full text-red-500 font-bold text-sm py-4">Ieși din cont</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- ================= VIEW: MESSAGES ================= -->
-    <section id="screen-messages" class="hidden flex-col h-full relative">
-        <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b" style="border-color: var(--glass-border); margin: 0;">
-            <div class="flex-1">
-                <h2 class="text-2xl font-extrabold holographic-text">Mesaje</h2>
-                <p class="text-xs font-semibold uppercase tracking-wide" style="color: var(--text-tertiary);">Conversațiile tale</p>
-            </div>
-            <span class="material-icons-round text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">chat</span>
-        </header>
-
-        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
-            <div id="conversations-container" class="p-5 space-y-3">
-                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan);">refresh</span></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ================= VIEW: ADMIN DASHBOARD ================= -->
-    <section id="screen-admin" class="hidden flex-col h-full relative">
-        <header class="glass-card px-5 py-5 flex items-center gap-4 z-20 sticky top-0 rounded-none border-0 border-b" style="border-color: var(--glass-border); margin: 0; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
-            <button onclick="showScreen('feed')" class="p-2.5 glass-card rounded-full transition-all hover:scale-110 neon-glow">
-                <span class="material-icons-round" style="color: var(--neon-cyan);">arrow_back</span>
-            </button>
-            <div class="flex-1">
-                <h2 class="text-2xl font-extrabold mb-1 holographic-text">Admin Dashboard</h2>
-                <p class="text-xs font-semibold uppercase tracking-wide" style="color: var(--text-tertiary);">Super-Admin Control Panel</p>
-            </div>
-            <span class="material-icons-round text-4xl neon-glow" style="color: var(--neon-purple); filter: drop-shadow(0 0 15px var(--neon-purple));">admin_panel_settings</span>
-        </header>
-
-        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
-            <!-- Stats Cards -->
-            <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="glass-card neon-glow" style="background: linear-gradient(135deg, rgba(0, 102, 255, 0.2) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
-                    <div class="text-3xl font-extrabold mb-1 holographic-text" id="admin-total-posts">0</div>
-                    <div class="text-[10px] uppercase font-bold tracking-wide" style="color: var(--text-tertiary);">Total Posts</div>
-                </div>
-                <div class="glass-card neon-glow" style="background: linear-gradient(135deg, rgba(57, 255, 20, 0.2) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
-                    <div class="text-3xl font-extrabold mb-1 holographic-text" id="admin-total-users">0</div>
-                    <div class="text-[10px] uppercase font-bold tracking-wide" style="color: var(--text-tertiary);">Total Users</div>
-                </div>
-                <div class="glass-card neon-glow" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(247, 37, 133, 0.1) 100%), var(--glass-light);">
-                    <div class="text-3xl font-extrabold mb-1 holographic-text" id="admin-total-comments">0</div>
-                    <div class="text-[10px] uppercase font-bold tracking-wide" style="color: var(--text-tertiary);">Comments</div>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="px-5 mb-5">
-                <div class="flex gap-3 glass-card p-2">
-                    <button id="admin-tab-posts" onclick="switchAdminTab('posts')" class="px-5 py-2.5 text-sm font-bold transition-all flex-1 rounded-full" style="background: var(--glass-medium); color: var(--neon-cyan); border: 1px solid var(--neon-cyan);">
-                        Posts
-                    </button>
-                    <button id="admin-tab-users" onclick="switchAdminTab('users')" class="px-5 py-2.5 text-sm font-bold transition-all flex-1 rounded-full" style="color: var(--text-tertiary);">
-                        Users
-                    </button>
-                    <button id="admin-tab-reports" onclick="switchAdminTab('reports')" class="px-5 py-2.5 text-sm font-bold transition-all flex-1 rounded-full" style="color: var(--text-tertiary);">
-                        Reports
-                    </button>
-                </div>
-            </div>
-
-            <!-- Posts Tab -->
-            <div id="admin-posts-tab" class="px-5 space-y-3">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-lg" style="color: var(--text-primary);">All Posts</h3>
-                    <select id="admin-posts-filter" onchange="filterAdminPosts()" class="text-xs font-bold glass-card px-4 py-2.5" style="color: var(--text-primary); border-radius: var(--radius-full);">
-                        <option value="all">All Categories</option>
-                        <option value="sale">Bazar</option>
-                        <option value="borrow">Cereri împrumut</option>
-                        <option value="event">Evenimente</option>
-                        <option value="local">Interes Local</option>
-                        <option value="business">Afaceri locale</option>
-                        <option value="recommendation">Recomandări</option>
-                    </select>
-                </div>
-                <div id="admin-posts-list" class="space-y-3">
-                    <div class="flex justify-center py-12"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
-                </div>
-            </div>
-
-            <!-- Users Tab -->
-            <div id="admin-users-tab" class="hidden px-5 space-y-3">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-lg" style="color: var(--text-primary);">All Users</h3>
-                    <input type="text" id="admin-users-search" oninput="searchAdminUsers()" placeholder="Search users..." class="text-xs glass-card px-4 py-2.5" style="border-radius: var(--radius-full);">
-                </div>
-                <div id="admin-users-list" class="space-y-3">
-                    <div class="flex justify-center py-12"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
-                </div>
-            </div>
-
-            <!-- Reports Tab -->
-            <div id="admin-reports-tab" class="hidden px-5">
-                <div class="text-center py-16 glass-card">
-                    <span class="material-icons-round text-6xl mb-4" style="color: var(--text-tertiary);">report</span>
-                    <p class="text-sm font-semibold" style="color: var(--text-secondary);">Reports feature coming soon</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ================= MODAL: PUBLIC PROFILE ================= -->
-    <div id="modal-public-profile" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
-        <div class="glass-card w-full sm:max-w-md h-[85vh] sm:h-[700px] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
-            <!-- Header -->
-            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <h3 class="font-extrabold text-xl holographic-text">Profil Vecin</h3>
-                <button onclick="toggleModal('modal-public-profile', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
-                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
-                </button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto hide-scrollbar">
-                <!-- Profile Info -->
-                <div class="p-8 flex flex-col items-center glass-card rounded-none border-0 border-b" style="border-color: var(--glass-border); margin: 0;">
-                    <div class="w-28 h-28 rounded-full p-1 mb-5 neon-glow" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));">
-                        <img id="public-prof-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 3px solid var(--carbon); background: var(--graphite);">
-                    </div>
-                    <h2 id="public-prof-name" class="text-2xl font-extrabold mb-1" style="color: var(--text-primary);">Nume Utilizator</h2>
-                    <p class="text-sm font-medium" style="color: var(--text-tertiary);">Membru al comunității</p>
-
-                    <!-- Optional: Action buttons -->
-                    <div id="public-prof-actions" class="mt-5 flex gap-3">
-                        <!-- Injected via JS -->
-                    </div>
-                </div>
-
-                <!-- User's Posts -->
-                <div class="p-5">
-                    <h3 class="font-bold text-lg mb-5 flex items-center gap-3" style="color: var(--text-primary);">
-                        <span class="material-icons-round" style="color: var(--neon-cyan); filter: drop-shadow(0 0 8px var(--neon-cyan));">list_alt</span>
-                        Anunțuri publicate
-                    </h3>
-                    <div id="public-prof-posts" class="flex flex-col gap-4">
-                        <div class="flex justify-center py-8"><span class="material-icons-round animate-spin text-2xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: NOTIFICATIONS ================= -->
-    <div id="modal-notifications" class="hidden fixed inset-0 z-[90] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
-        <div class="glass-card w-full sm:max-w-md h-[70vh] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
-            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <h3 class="font-extrabold text-xl flex items-center gap-3 holographic-text">
-                    <span class="material-icons-round" style="filter: drop-shadow(0 0 8px var(--neon-cyan));">notifications</span> Notificări
-                </h3>
-                <button onclick="toggleModal('modal-notifications', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
-                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
-                </button>
-            </div>
-            <div id="notif-list" class="flex-1 overflow-y-auto hide-scrollbar p-4">
-                <!-- Content injected via JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: COMMENTS ================= -->
-    <div id="modal-comments" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
-        <div class="glass-card w-full sm:max-w-md h-[80vh] sm:h-[600px] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
-            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <h3 class="font-extrabold text-xl flex items-center gap-3 holographic-text">
-                    <span class="material-icons-round" style="filter: drop-shadow(0 0 8px var(--neon-cyan));">forum</span> Comentarii
-                </h3>
-                <button onclick="toggleModal('modal-comments', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
-                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
-                </button>
-            </div>
-
-            <div id="comments-list" class="flex-1 overflow-y-auto hide-scrollbar p-5 space-y-4">
-            </div>
-
-            <form id="comment-form" class="p-5 glass-card flex gap-3 items-center safe-pb border-0 border-t rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <div class="w-10 h-10 rounded-full p-0.5 flex-shrink-0" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
-                    <img id="comment-user-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 2px solid var(--carbon);">
-                </div>
-                <input type="text" id="comment-input" required placeholder="Scrie un comentariu..." class="flex-1" style="border-radius: var(--radius-full);">
-                <button type="submit" class="fab-pulse p-3 rounded-full flex-shrink-0 flex items-center justify-center neon-glow">
-                    <span class="material-icons-round text-base" style="color: var(--void-black);">send</span>
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: CREATE POST ================= -->
-    <div id="modal-create" class="hidden fixed inset-0 z-[60] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
-        <div class="glass-card w-full sm:max-w-md h-[85vh] sm:h-auto p-6 flex flex-col neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-extrabold holographic-text">Postare Nouă</h2>
-                <button onclick="toggleModal('modal-create', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
-                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
-                </button>
-            </div>
-
-            <form id="create-form" class="flex-1 overflow-y-auto hide-scrollbar space-y-5">
-                <div>
-                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Categorie</label>
-                    <select id="post-category" class="w-full">
-                        <option value="sale">Bazar</option>
-                        <option value="borrow">Cereri imprumut</option>
-                        <option value="event">Evenimente</option>
-                        <option value="local">Interes Local</option>
-                        <option value="business">Afaceri locale</option>
-                        <option value="recommendation">Recomandari</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Titlu</label>
-                    <input type="text" id="post-title" required class="w-full">
-                </div>
-
-                <div id="section-price">
-                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Preț (RON)</label>
-                    <input type="number" id="post-price" class="w-full">
-                </div>
-
-                <div id="section-event-details" class="hidden space-y-5">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Dată</label>
-                            <input type="date" id="event-date" class="w-full">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Oră</label>
-                            <input type="time" id="event-time" class="w-full">
-                        </div>
-                    </div>
-
-                    <!-- NEW: Location Field -->
                     <div>
-                        <label class="text-xs font-bold uppercase mb-2 flex items-center justify-between">
-                            <span style="color: var(--text-tertiary);">Locație (Adresă)</span>
-                            <button type="button" onclick="openLocationPickerForCreate()" class="text-xs normal-case font-bold hover:underline flex items-center gap-1" style="color: var(--neon-cyan);">
-                                <span class="material-icons-round text-sm">location_on</span>
-                                Alege pe hartă
-                            </button>
-                        </label>
-                        <input type="text" id="event-location" placeholder="ex. Parcul Corbeanca sau adresă completă" class="w-full">
-                    </div>
-
-                    <div>
-                         <label class="text-xs font-bold uppercase mb-3 block" style="color: var(--text-tertiary);">Tip Acces</label>
-                         <div class="flex items-center gap-6">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="radio" name="event-cost" value="free" onclick="toggleEventPrice()" checked style="accent-color: var(--neon-cyan);">
-                                <span class="text-sm font-bold" style="color: var(--text-secondary);">Gratuit</span>
-                            </label>
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="radio" name="event-cost" value="paid" id="event-paid" onclick="toggleEventPrice()" style="accent-color: var(--neon-cyan);">
-                                <span class="text-sm font-bold" style="color: var(--text-secondary);">Cu Plată</span>
-                            </label>
-                         </div>
-                         <div id="event-price-input" class="hidden mt-3">
-                             <input type="number" id="event-price-val" placeholder="Preț bilet (RON)" class="w-full">
-                         </div>
+                        <h1 class="text-xl font-extrabold text-gray-900">Corbeanca Community</h1>
+                        <p class="text-xs font-semibold text-gray-500">Conectează-te cu vecinii tăi</p>
                     </div>
                 </div>
-
-                <div>
-                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Telefon Contact (WhatsApp)</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-3.5 font-bold text-sm" style="color: var(--text-tertiary);">+40</span>
-                        <input type="tel" id="post-phone" required class="w-full pl-12">
-                    </div>
-                    <p class="text-[10px] mt-2" style="color: var(--text-tertiary);">Obligatoriu pentru contact.</p>
-                </div>
-
-                <!-- Image Upload Section -->
-                <div>
-                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Imagine (Opțional)</label>
-                    <input type="file" id="post-image" accept="image/*" class="w-full">
-                    <div id="post-image-preview-container" class="hidden mt-3 relative">
-                        <img id="post-image-preview" src="" class="w-full h-40 object-cover glass-card" style="border-radius: var(--radius-md);">
-                        <button type="button" onclick="clearCreateImage()" class="absolute top-2 right-2 glass-card p-2 rounded-full transition-all hover:scale-110" style="background: rgba(247, 37, 133, 0.3); border: 1px solid var(--neon-pink);">
-                            <span class="material-icons-round text-sm" style="color: var(--neon-pink);">close</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Descriere</label>
-                    <textarea id="post-desc" rows="4" required class="w-full"></textarea>
-                </div>
-
-                <div class="pt-5">
-                    <button type="submit" id="btn-submit-post" class="w-full btn-primary">Publică</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: EDIT POST ================= -->
-    <div id="modal-edit" class="hidden fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-end sm:items-center sm:justify-center backdrop-blur-sm transition-all">
-        <div class="bg-white w-full sm:max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl p-6 flex flex-col shadow-2xl overflow-y-auto">
-            <h2 class="text-xl font-extrabold text-gray-800 mb-4">Editează Anunțul</h2>
-            <form id="edit-form" class="space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Titlu</label>
-                    <input type="text" id="edit-title" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
-                </div>
-
-                <!-- Sale-specific fields -->
-                <div id="edit-sale-fields">
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Preț (RON)</label>
-                    <input type="number" id="edit-price" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
-                </div>
-
-                <!-- Event-specific fields -->
-                <div id="edit-event-fields" class="hidden space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Dată</label>
-                            <input type="date" id="edit-event-date" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Oră</label>
-                            <input type="time" id="edit-event-time" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center justify-between">
-                            <span>Locație</span>
-                            <button type="button" onclick="openLocationPicker()" class="text-brand-primary text-xs normal-case font-bold hover:underline flex items-center gap-1">
-                                <span class="material-icons-round text-sm">location_on</span>
-                                Alege pe hartă
-                            </button>
-                        </label>
-                        <input type="text" id="edit-event-location" placeholder="ex. Parcul Corbeanca sau adresă completă" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Preț Participare</label>
-                        <div class="flex items-center gap-4 mb-2">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="edit-event-cost" value="free" id="edit-event-free" class="text-brand-primary focus:ring-brand-primary">
-                                <span class="text-sm font-bold text-gray-700">Gratuit</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="edit-event-cost" value="paid" id="edit-event-paid" class="text-brand-primary focus:ring-brand-primary">
-                                <span class="text-sm font-bold text-gray-700">Cu Plată</span>
-                            </label>
-                        </div>
-                        <div id="edit-event-price-input" class="hidden">
-                            <input type="number" id="edit-event-price-val" placeholder="Preț (RON)" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold text-gray-800 focus:outline-none focus:border-brand-primary">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Image Upload Section -->
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Imagine (Opțional)</label>
-                    <input type="file" id="edit-post-image" accept="image/*" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-sm text-gray-800 focus:outline-none focus:border-brand-primary">
-                    <div id="edit-image-preview-container" class="hidden mt-2 relative">
-                        <img id="edit-image-preview" src="" class="w-full h-40 object-cover rounded-xl border border-gray-200">
-                        <button type="button" onclick="clearEditImage()" class="absolute top-2 right-2 bg-white p-1 rounded-full shadow-md text-red-500 flex items-center justify-center">
-                            <span class="material-icons-round text-sm">close</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase mb-1 block">Descriere</label>
-                    <textarea id="edit-desc" rows="3" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-700 focus:outline-none focus:border-brand-primary"></textarea>
-                </div>
-                <div class="pt-2 grid grid-cols-2 gap-3">
-                    <button type="button" onclick="toggleModal('modal-edit', false)" class="bg-gray-100 text-gray-600 py-3 rounded-xl font-bold">Anulează</button>
-                    <button type="submit" id="btn-update-post" class="bg-blue-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-600">Actualizează</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: POST DETAILS ================= -->
-    <div id="modal-post-details" class="hidden fixed inset-0 z-[70] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
-        <div class="glass-card w-full sm:max-w-2xl max-h-[90vh] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
-            <!-- Header -->
-            <div class="p-5 glass-card flex justify-between items-center z-10 sticky top-0 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <h3 class="font-extrabold text-xl holographic-text" id="post-detail-title">Detalii</h3>
-                <div class="flex gap-3">
-                    <button onclick="openCommentsFromDetail()" class="glass-card p-2.5 rounded-full items-center">
-                        <span class="material-icons-round" style="color: var(--text-secondary);">chat_bubble_outline</span>
-                    </button>
-                    <button onclick="toggleModal('modal-post-details', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
-                        <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div id="post-detail-content" class="flex-1 overflow-y-auto hide-scrollbar p-6">
-                <!-- Content will be populated dynamically -->
+                <a href="app.html" class="bg-brand-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-brand-primary-dark transition-all shadow-md hover:shadow-lg">
+                    Înregistrează-te Gratuit
+                </a>
             </div>
         </div>
-    </div>
-
-    <!-- ================= MODAL: CONVERSATION ================= -->
-    <div id="modal-conversation" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
-        <div class="glass-card w-full sm:max-w-md h-[85vh] sm:h-[700px] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
-            <!-- Header -->
-            <div class="p-5 glass-card flex items-center gap-4 z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <button onclick="toggleModal('modal-conversation', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
-                    <span class="material-icons-round" style="color: var(--text-secondary);">arrow_back</span>
-                </button>
-                <div class="w-10 h-10 rounded-full p-0.5 flex-shrink-0" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
-                    <img id="conversation-user-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 2px solid var(--carbon);">
-                </div>
-                <div class="flex-1">
-                    <h3 id="conversation-user-name" class="font-extrabold text-lg" style="color: var(--text-primary);">Utilizator</h3>
-                </div>
-            </div>
-
-            <!-- Messages Container -->
-            <div id="messages-container" class="flex-1 overflow-y-auto hide-scrollbar p-5 space-y-4">
-                <!-- Messages will be rendered here -->
-            </div>
-
-            <!-- Message Input -->
-            <form id="message-form" class="p-5 glass-card flex gap-3 items-center safe-pb border-0 border-t rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <input type="text" id="message-input" required placeholder="Scrie un mesaj..." class="flex-1" style="border-radius: var(--radius-full);">
-                <button type="submit" class="fab-pulse p-3 rounded-full flex-shrink-0 flex items-center justify-center neon-glow">
-                    <span class="material-icons-round text-base" style="color: var(--void-black);">send</span>
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: LOCATION PICKER ================= -->
-    <div id="modal-location-picker" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
-        <div class="glass-card w-full sm:max-w-2xl h-[80vh] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
-            <div class="p-5 glass-card flex justify-between items-center z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <h3 class="font-extrabold text-xl flex items-center gap-3 holographic-text">
-                    <span class="material-icons-round" style="filter: drop-shadow(0 0 8px var(--neon-cyan));">location_on</span> Alege Locația
-                </h3>
-                <button onclick="toggleModal('modal-location-picker', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
-                    <span class="material-icons-round" style="color: var(--text-secondary);">close</span>
-                </button>
-            </div>
-
-            <div class="p-5 glass-card border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <input type="text" id="location-search" placeholder="Caută adresă..." class="w-full">
-                <p class="text-xs mt-3" style="color: var(--text-tertiary);">Sau click pe hartă pentru a alege locația</p>
-            </div>
-
-            <div class="flex-1 relative">
-                <div id="map" class="w-full h-full"></div>
-            </div>
-
-            <div class="p-5 glass-card border-0 border-t rounded-none" style="border-color: var(--glass-border); margin: 0;">
-                <div class="mb-4">
-                    <label class="text-xs font-bold uppercase mb-2 block" style="color: var(--text-tertiary);">Locație Selectată</label>
-                    <input type="text" id="selected-location-display" readonly class="w-full">
-                </div>
-                <button type="button" onclick="confirmLocationSelection()" class="w-full btn-primary">
-                    Confirmă Locația
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= BOTTOM NAVIGATION ================= -->
-    <nav id="bottom-nav" class="hidden z-40">
-        <!-- Home -->
-        <button onclick="showScreen('feed')" id="nav-home" class="nav-btn flex flex-col items-center transition-all gap-1.5 relative" style="color: var(--neon-cyan);">
-            <span class="material-icons-round text-2xl">home</span>
-            <span class="text-[9px] font-bold uppercase tracking-wide">Acasa</span>
-        </button>
-
-        <!-- Messages -->
-        <button onclick="showScreen('messages')" id="nav-messages" class="nav-btn flex flex-col items-center transition-all gap-1.5 relative" style="color: var(--text-tertiary);">
-            <span class="material-icons-round text-2xl">chat_bubble_outline</span>
-            <span class="text-[9px] font-bold uppercase tracking-wide">Mesaje</span>
-            <span id="messages-badge" class="hidden absolute top-0 right-0 w-3 h-3 rounded-full border-2" style="background: var(--neon-pink); border-color: var(--carbon);"></span>
-        </button>
-
-        <!-- FAB Create Button -->
-        <button onclick="toggleModal('modal-create', true)" class="w-16 h-16 rounded-full -mt-10 flex items-center justify-center transform transition-all fab-pulse neon-glow">
-            <span class="material-icons-round text-4xl" style="color: var(--void-black); font-weight: bold;">add</span>
-        </button>
-
-        <!-- Profile -->
-        <button onclick="showScreen('profile')" id="nav-profile" class="nav-btn flex flex-col items-center transition-all gap-1.5" style="color: var(--text-tertiary);">
-            <span class="material-icons-round text-2xl">person_outline</span>
-            <span class="text-[9px] font-bold uppercase tracking-wide">Profil</span>
-        </button>
-
-        <!-- Admin (Only for super-admins) -->
-        <button onclick="showScreen('admin')" id="nav-admin" class="hidden nav-btn flex-col items-center transition-all gap-1.5" style="color: var(--text-tertiary);">
-            <span class="material-icons-round text-2xl">admin_panel_settings</span>
-            <span class="text-[9px] font-bold uppercase tracking-wide">Admin</span>
-        </button>
     </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 bg-brand-secondary text-brand-primary px-4 py-2 rounded-full text-sm font-bold mb-6">
+                    <span class="material-icons-round text-base">location_on</span>
+                    Comunitatea Locală Corbeanca
+                </div>
+                <h2 class="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
+                    Vecinii tăi sunt la<br>
+                    <span class="text-brand-primary">un click distanță</span>
+                </h2>
+                <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+                    Platformă dedicată comunității Corbeanca. Descoperă evenimente locale, cumpără și vinde produse, împrumută unelte de la vecini și rămâi conectat cu comunitatea ta.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="app.html" class="bg-brand-primary text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-brand-primary-dark transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
+                        <span class="material-icons-round">person_add</span>
+                        Creează Cont Gratuit
+                    </a>
+                    <a href="#features" class="bg-white text-gray-800 px-8 py-4 rounded-xl font-bold text-base border-2 border-gray-200 hover:border-brand-primary transition-all flex items-center gap-2">
+                        <span class="material-icons-round">info</span>
+                        Află Mai Multe
+                    </a>
+                </div>
+            </div>
+
+            <!-- Hero Image Placeholder -->
+            <div class="bg-white rounded-3xl shadow-2xl p-8 border border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Mock Post 1 -->
+                    <div class="bg-brand-bg rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                        <div class="h-40 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                            <span class="material-icons-round text-6xl text-blue-500">shopping_bag</span>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-flex items-center px-3 py-1 bg-brand-secondary text-xs font-bold text-gray-700 rounded-full uppercase">
+                                    Bazar
+                                </span>
+                            </div>
+                            <h3 class="font-extrabold text-base text-gray-900 mb-2">Mobilier de grădină</h3>
+                            <p class="text-sm text-gray-600 mb-2">Scaune și masă pentru grădină, în stare bună</p>
+                            <p class="text-brand-primary font-extrabold text-xl">450 RON</p>
+                        </div>
+                    </div>
+
+                    <!-- Mock Post 2 -->
+                    <div class="bg-brand-bg rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                        <div class="h-40 bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
+                            <span class="material-icons-round text-6xl text-purple-500">event</span>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-flex items-center px-3 py-1 bg-brand-secondary text-xs font-bold text-gray-700 rounded-full uppercase">
+                                    Eveniment
+                                </span>
+                            </div>
+                            <h3 class="font-extrabold text-base text-gray-900 mb-2">Piață de Crăciun</h3>
+                            <p class="text-sm text-gray-600 mb-2">15 Decembrie, 10:00 - Parcul Central</p>
+                            <p class="text-green-600 font-bold text-sm">Gratuit</p>
+                        </div>
+                    </div>
+
+                    <!-- Mock Post 3 -->
+                    <div class="bg-brand-bg rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                        <div class="h-40 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                            <span class="material-icons-round text-6xl text-orange-500">handshake</span>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-flex items-center px-3 py-1 bg-brand-secondary text-xs font-bold text-gray-700 rounded-full uppercase">
+                                    Împrumut
+                                </span>
+                            </div>
+                            <h3 class="font-extrabold text-base text-gray-900 mb-2">Ferăstrău electric</h3>
+                            <p class="text-sm text-gray-600 mb-2">Caut să împrumut pentru weekend</p>
+                            <p class="text-gray-500 font-semibold text-sm">Împrumut</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-16 px-6 bg-white border-y border-gray-200">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-extrabold text-brand-primary mb-2 stat-counter">500+</div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Membri Activi</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-extrabold text-brand-primary mb-2 stat-counter">1,200+</div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Anunțuri Postate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-extrabold text-brand-primary mb-2 stat-counter">150+</div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Evenimente</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-extrabold text-brand-primary mb-2 stat-counter">3,500+</div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Interacțiuni</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-6 bg-brand-bg">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                    Ce poți face în aplicație?
+                </h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Tot ce ai nevoie pentru a fi conectat cu comunitatea ta locală, într-o singură aplicație
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1 -->
+                <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div class="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-icons-round text-4xl text-blue-500">shopping_bag</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-gray-900 mb-3">Bazar Local</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Cumpără și vinde produse în comunitate. De la mobilier la electronice, totul la un preț corect și fără comisioane.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div class="w-14 h-14 bg-purple-50 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-icons-round text-4xl text-purple-500">event</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-gray-900 mb-3">Evenimente Locale</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Descoperă și participă la evenimente din comunitate. De la piețe săptămânale la sărbători de cartier.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div class="w-14 h-14 bg-orange-50 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-icons-round text-4xl text-orange-500">handshake</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-gray-900 mb-3">Împrumută & Ajută</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Ai nevoie de o scară sau un bormaașină? Împrumută de la vecini în loc să cumperi. Sustenabil și practic!
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div class="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-icons-round text-4xl text-green-500">business</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-gray-900 mb-3">Afaceri Locale</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Promovează-ți afacerea locală sau descoperă servicii oferite de vecini. Susține economia locală!
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div class="w-14 h-14 bg-pink-50 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-icons-round text-4xl text-pink-500">star</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-gray-900 mb-3">Recomandări</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Partajează și primește recomandări pentru restaurante, servicii și locuri din zonă. Feedback onest de la vecini.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div class="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-icons-round text-4xl text-red-500">chat_bubble</span>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-gray-900 mb-3">Mesagerie Directă</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Comunică direct cu vecinii prin mesaje și WhatsApp. Negociază prețuri, stabilește întâlniri, creează conexiuni.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20 px-6 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                    Cum funcționează?
+                </h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Începe în doar 3 pași simpli
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-brand-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <span class="text-3xl font-extrabold text-white">1</span>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-gray-900 mb-3">Înregistrează-te</h3>
+                    <p class="text-gray-600 leading-relaxed max-w-sm mx-auto">
+                        Creează-ți contul gratuit în mai puțin de un minut. Folosește email sau Google pentru autentificare rapidă.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-brand-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <span class="text-3xl font-extrabold text-white">2</span>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-gray-900 mb-3">Explorează</h3>
+                    <p class="text-gray-600 leading-relaxed max-w-sm mx-auto">
+                        Descoperă anunțuri, evenimente și recomandări din comunitate. Filtrează după categorie și găsește rapid ce cauți.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-brand-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <span class="text-3xl font-extrabold text-white">3</span>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-gray-900 mb-3">Conectează-te</h3>
+                    <p class="text-gray-600 leading-relaxed max-w-sm mx-auto">
+                        Contactează vecinii prin WhatsApp sau mesaje directe. Postează propriile anunțuri și fii parte din comunitate!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="py-20 px-6 bg-brand-bg">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                        De ce să alegi<br>
+                        <span class="text-brand-primary">Corbeanca Community?</span>
+                    </h2>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-2xl text-green-500">check_circle</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-extrabold text-gray-900 mb-1">100% Gratuit</h3>
+                                <p class="text-gray-600">Fără comisioane ascunse. Postează nelimitat și folosește toate funcțiile gratuit.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-2xl text-blue-500">security</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-extrabold text-gray-900 mb-1">Sigur & Verificat</h3>
+                                <p class="text-gray-600">Doar membrii din Corbeanca au acces. Comunitate închisă pentru siguranța ta.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-2xl text-purple-500">groups</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-extrabold text-gray-900 mb-1">Comunitate Activă</h3>
+                                <p class="text-gray-600">Peste 500 de vecini activi care ajută, împrumută și împărtășesc.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-2xl text-orange-500">phone_iphone</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-extrabold text-gray-900 mb-1">Ușor de Folosit</h3>
+                                <p class="text-gray-600">Interfață intuitivă, funcționează perfect pe telefon, tabletă și desktop.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl p-8 shadow-xl border border-gray-200">
+                    <div class="bg-brand-bg rounded-2xl p-6 mb-6">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-full flex items-center justify-center">
+                                <span class="material-icons-round text-white text-2xl">person</span>
+                            </div>
+                            <div>
+                                <div class="font-extrabold text-gray-900">Maria Popescu</div>
+                                <div class="text-sm text-gray-500">Membră din 2023</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed italic">
+                            "Aplicația m-a ajutat să cunosc vecinii și să găsesc mobilier second-hand excelent pentru casă. Recomand cu încredere!"
+                        </p>
+                    </div>
+
+                    <div class="bg-brand-bg rounded-2xl p-6 mb-6">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                                <span class="material-icons-round text-white text-2xl">person</span>
+                            </div>
+                            <div>
+                                <div class="font-extrabold text-gray-900">Andrei Ionescu</div>
+                                <div class="text-sm text-gray-500">Membru din 2022</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed italic">
+                            "Fantastic! Am împrumutat unelte de la vecini și am participat la evenimente super. Comunitatea este foarte prietenoasă."
+                        </p>
+                    </div>
+
+                    <div class="bg-brand-bg rounded-2xl p-6">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <span class="material-icons-round text-white text-2xl">person</span>
+                            </div>
+                            <div>
+                                <div class="font-extrabold text-gray-900">Elena Dumitrescu</div>
+                                <div class="text-sm text-gray-500">Membră din 2024</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed italic">
+                            "Ideală pentru promovarea afacerii mele locale! Am găsit mulți clienți noi din zonă prin aplicație."
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="register" class="py-20 px-6 bg-gradient-to-br from-brand-primary to-brand-primary-dark">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="mb-8">
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                    <span class="material-icons-round text-5xl text-brand-primary">cottage</span>
+                </div>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-6">
+                    Alătură-te comunității astăzi!
+                </h2>
+                <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto leading-relaxed">
+                    Peste 500 de vecini te așteaptă. Începe să descoperi, să împarți și să te conectezi cu comunitatea ta locală.
+                </p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-8 shadow-2xl max-w-md mx-auto">
+                <h3 class="text-2xl font-extrabold text-gray-900 mb-6">Creează cont gratuit</h3>
+                <form class="space-y-4">
+                    <div class="text-left">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Numele Tău</label>
+                        <input type="text" required placeholder="ex. Maria Popescu" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
+                    </div>
+
+                    <div class="text-left">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Email</label>
+                        <input type="email" required placeholder="nume@email.com" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
+                    </div>
+
+                    <div class="text-left">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Telefon (WhatsApp)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-3.5 font-bold text-sm text-gray-500">+40</span>
+                            <input type="tel" required placeholder="7xx xxx xxx" class="w-full pl-14 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
+                        </div>
+                    </div>
+
+                    <div class="text-left">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Parolă</label>
+                        <input type="password" required placeholder="••••••••" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
+                    </div>
+
+                    <button type="submit" class="w-full bg-brand-primary text-white py-4 rounded-xl font-bold text-base shadow-lg hover:bg-brand-primary-dark transition-all hover:shadow-xl flex items-center justify-center gap-2">
+                        <span class="material-icons-round">person_add</span>
+                        Înregistrează-te Gratuit
+                    </button>
+
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-3 text-xs uppercase font-semibold text-gray-400 bg-white">sau</span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="w-full bg-white border-2 border-gray-200 py-4 rounded-xl font-bold text-base hover:border-brand-primary transition-all flex items-center justify-center gap-3">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6">
+                        <span class="text-gray-900">Continuă cu Google</span>
+                    </button>
+                </form>
+
+                <p class="text-xs text-gray-500 mt-6 leading-relaxed">
+                    Înregistrându-te, ești de acord cu termenii și condițiile platformei Corbeanca Community.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center">
+                            <span class="material-icons-round text-3xl text-white">cottage</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-extrabold">Corbeanca Community</h3>
+                            <p class="text-sm text-gray-400">Conectează-te cu vecinii tăi</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Platformă dedicată comunității locale Corbeanca. Cumpără, vinde, împrumută și participă la evenimente locale.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-sm uppercase tracking-wider mb-4">Link-uri</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition-colors">Funcționalități</a></li>
+                        <li><a href="app.html" class="text-gray-400 hover:text-white transition-colors">Înregistrare</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Despre Noi</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-sm uppercase tracking-wider mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Termeni & Condiții</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Politica de Confidențialitate</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-gray-400">
+                    © 2025 Corbeanca Community. Toate drepturile rezervate.
+                </p>
+                <div class="flex items-center gap-2">
+                    <span class="material-icons-round text-brand-primary text-sm">location_on</span>
+                    <span class="text-sm text-gray-400">Făcut cu ❤️ pentru Corbeanca</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
 </body>
 </html>

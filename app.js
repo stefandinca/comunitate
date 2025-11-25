@@ -1084,6 +1084,70 @@ window.toggleInterest = async (postId) => {
     }
 }
 
+window.toggleLike = async (postId) => {
+    if (!currentUser) return showToast('Trebuie să fii autentificat!', 'error');
+    const btn = document.getElementById(`like-btn-${postId}`);
+    if (btn) btn.classList.add('opacity-50');
+
+    try {
+        const postRef = getDocPath(COLL_POSTS, postId);
+        const postDoc = await getDoc(postRef);
+        if (!postDoc.exists()) return;
+
+        const postData = postDoc.data();
+        const likedUsers = postData.likedUsers || [];
+        const isLiked = likedUsers.includes(currentUser.uid);
+
+        if (isLiked) {
+            await updateDoc(postRef, {
+                likedUsers: arrayRemove(currentUser.uid),
+                likeCount: increment(-1)
+            });
+        } else {
+            await updateDoc(postRef, {
+                likedUsers: arrayUnion(currentUser.uid),
+                likeCount: increment(1)
+            });
+        }
+    } catch (e) {
+        showToast('Eroare la actualizare.', 'error');
+    } finally {
+        if (btn) btn.classList.remove('opacity-50');
+    }
+}
+
+window.toggleSave = async (postId) => {
+    if (!currentUser) return showToast('Trebuie să fii autentificat!', 'error');
+    const btn = document.getElementById(`save-btn-${postId}`);
+    if (btn) btn.classList.add('opacity-50');
+
+    try {
+        const postRef = getDocPath(COLL_POSTS, postId);
+        const postDoc = await getDoc(postRef);
+        if (!postDoc.exists()) return;
+
+        const postData = postDoc.data();
+        const savedUsers = postData.savedUsers || [];
+        const isSaved = savedUsers.includes(currentUser.uid);
+
+        if (isSaved) {
+            await updateDoc(postRef, {
+                savedUsers: arrayRemove(currentUser.uid)
+            });
+            showToast('Postarea a fost eliminată din salvate.');
+        } else {
+            await updateDoc(postRef, {
+                savedUsers: arrayUnion(currentUser.uid)
+            });
+            showToast('Postarea a fost salvată.');
+        }
+    } catch (e) {
+        showToast('Eroare la salvare.', 'error');
+    } finally {
+        if (btn) btn.classList.remove('opacity-50');
+    }
+}
+
 createForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -1584,6 +1648,14 @@ function createPostCard(post) {
     const commentCount = post.commentCount || 0;
     const likeCount = post.likeCount || 0;
 
+    const isLiked = (post.likedUsers || []).includes(currentUser?.uid);
+    const isSaved = (post.savedUsers || []).includes(currentUser?.uid);
+
+    // Truncate description to ~100 characters
+    const truncatedDesc = post.description.length > 100
+        ? post.description.substring(0, 100) + '...'
+        : post.description;
+
     article.innerHTML = `
         <!-- Post Header -->
         <div class="post-header">
@@ -1594,57 +1666,48 @@ function createPostCard(post) {
                     <p>${date}</p>
                 </div>
             </div>
-            <div class="flex items-center gap-1">
-                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="p-2 rounded-full glass-card" style="color: var(--neon-pink);" title="Admin: Delete Post">
-                    <span class="material-icons-round text-sm">delete</span>
-                </button>` : ''}
-                <button onclick="event.stopPropagation()" class="p-2 rounded-full glass-card" style="color: var(--text-secondary);">
-                    <span class="material-icons-round">more_horiz</span>
+            ${post.authorPhone ? `
+                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', '${post.type}')" class="px-4 py-2 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2" style="background: #25D366;">
+                    WhatsApp
                 </button>
-            </div>
+            ` : ''}
         </div>
 
         <!-- Post Image -->
         ${post.image ? `<img src="${post.image}" class="post-image" alt="${post.title}">` : ''}
 
+        <!-- Post Content -->
+        <div class="post-content pb-20">
+            <div class="flex justify-between items-center mb-3">
+                <span class="post-category-badge">
+                    ${getCategoryLabel(post.type)}
+                </span>
+                ${post.price ? `
+                    <div class="flex items-center gap-2 text-brand-primary font-bold text-base">
+                        <span class="material-icons-round" style="font-size: 20px;">sell</span>
+                        <span>${post.price} RON</span>
+                    </div>
+                ` : ''}
+            </div>
+
+            <h3 class="mb-3">${post.title}</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">${truncatedDesc}</p>
+        </div>
+
         <!-- Post Actions -->
         <div class="post-actions">
-            <button class="action-btn" onclick="event.stopPropagation()">
-                <span class="material-icons-round">favorite_border</span>
-                ${likeCount > 0 ? `<span>${likeCount}</span>` : ''}
+            <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleLike('${post.id}')" id="like-btn-${post.id}">
+                <span class="material-icons-round">${isLiked ? 'favorite' : 'favorite_border'}</span>
+                <span>${likeCount} aprecieri</span>
             </button>
             <button class="action-btn" onclick="event.stopPropagation(); openComments('${post.id}')">
                 <span class="material-icons-round">chat_bubble_outline</span>
-                ${commentCount > 0 ? `<span>${commentCount}</span>` : ''}
+                <span>${commentCount} comentarii</span>
             </button>
-            <button class="action-btn ml-auto" onclick="event.stopPropagation()">
-                <span class="material-icons-round">bookmark_border</span>
+            <button class="action-btn ml-auto ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSave('${post.id}')" id="save-btn-${post.id}">
+                <span class="material-icons-round">${isSaved ? 'bookmark' : 'bookmark_border'}</span>
+                <span class="text-xs">salveaza</span>
             </button>
-        </div>
-
-        <!-- Post Content -->
-        <div class="post-content">
-            <span class="post-category-badge">${getCategoryLabel(post.type)}</span>
-            <h3>${post.title}</h3>
-            <p>${post.description}</p>
-            ${post.price ? `<div class="price">${post.price} RON</div>` : ''}
-        </div>
-
-        <!-- Contact Button - Bottom Right -->
-        <div class="absolute bottom-5 right-5 z-10">
-            ${post.authorPhone ? `
-                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', '${post.type}')" class="btn-primary flex items-center gap-2.5 py-3 px-5" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: var(--radius-full); box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                    <span class="font-bold">WhatsApp</span>
-                </button>
-            ` : `
-                <button onclick="event.stopPropagation(); showToast('Mesagerie în curând!', 'info')" class="btn-primary flex items-center gap-2.5 py-3 px-5">
-                    <span class="material-icons-round text-lg">message</span>
-                    <span class="font-bold">Mesaj</span>
-                </button>
-            `}
         </div>
     `;
 
@@ -1663,9 +1726,10 @@ function createEventCard(post) {
     const interestedCount = post.interestedCount || 0;
     const commentCount = post.commentCount || 0;
     const isInterested = (post.interestedUsers || []).includes(currentUser?.uid);
+    const isSaved = (post.savedUsers || []).includes(currentUser?.uid);
 
     const eventDateObj = new Date(post.eventDate);
-    const dateStr = eventDateObj.toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric', month: 'long' });
+    const dateStr = eventDateObj.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
     const location = post.eventLocation || 'Corbeanca';
 
     article.innerHTML = `
@@ -1678,68 +1742,57 @@ function createEventCard(post) {
                     <p>${date}</p>
                 </div>
             </div>
-            <div class="flex items-center gap-1">
-                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="p-2 rounded-full glass-card" style="color: var(--neon-pink);" title="Admin: Delete Event">
-                    <span class="material-icons-round text-sm">delete</span>
-                </button>` : ''}
-                <button onclick="event.stopPropagation()" class="p-2 rounded-full glass-card" style="color: var(--text-secondary);">
-                    <span class="material-icons-round">more_horiz</span>
+            ${post.authorPhone ? `
+                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', 'event')" class="px-4 py-2 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2" style="background: #25D366;">
+                    WhatsApp
                 </button>
-            </div>
+            ` : ''}
         </div>
 
         <!-- Post Image -->
         ${post.image ? `<img src="${post.image}" class="post-image" alt="${post.title}">` : ''}
 
+        <!-- Post Content -->
+        <div class="post-content pb-20">
+            <div class="flex justify-between items-center mb-3">
+                <span class="post-category-badge">
+                    Evenimente
+                </span>
+                <div class="flex items-center gap-2 text-brand-primary font-bold text-sm">
+                    <span class="material-icons-round" style="font-size: 18px;">schedule</span>
+                    <span>${dateStr}, ${post.eventTime}</span>
+                </div>
+            </div>
+
+            <h3 class="mb-4">${post.title}</h3>
+
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2 text-gray-600 text-sm font-semibold">
+                    <span class="material-icons-round text-gray-500" style="font-size: 20px;">location_on</span>
+                    <span>${location}</span>
+                </div>
+                ${post.isFree ? `
+                    <span class="px-4 py-1.5 text-sm font-extrabold rounded-lg bg-green-50 border border-green-500 text-green-600">GRATUIT</span>
+                ` : post.price ? `
+                    <span class="px-4 py-1.5 text-sm font-extrabold rounded-lg bg-brand-secondary border border-brand-primary text-brand-primary">${post.price} RON</span>
+                ` : ''}
+            </div>
+        </div>
+
         <!-- Post Actions -->
         <div class="post-actions">
             <button class="action-btn ${isInterested ? 'liked' : ''}" onclick="event.stopPropagation(); toggleInterest('${post.id}')" id="interest-btn-${post.id}">
                 <span class="material-icons-round">${isInterested ? 'favorite' : 'favorite_border'}</span>
-                ${interestedCount > 0 ? `<span>${interestedCount}</span>` : ''}
+                <span>${interestedCount} aprecieri</span>
             </button>
             <button class="action-btn" onclick="event.stopPropagation(); openComments('${post.id}')">
                 <span class="material-icons-round">chat_bubble_outline</span>
-                ${commentCount > 0 ? `<span>${commentCount}</span>` : ''}
+                <span>${commentCount} comentarii</span>
             </button>
-            <button class="action-btn ml-auto" onclick="event.stopPropagation()">
-                <span class="material-icons-round">bookmark_border</span>
+            <button class="action-btn ml-auto ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSave('${post.id}')" id="save-btn-${post.id}">
+                <span class="material-icons-round">${isSaved ? 'bookmark' : 'bookmark_border'}</span>
+                <span class="text-xs">salveaza</span>
             </button>
-        </div>
-
-        <!-- Post Content -->
-        <div class="post-content">
-            <span class="post-category-badge">
-                <span class="material-icons-round" style="font-size: 12px; vertical-align: middle;">event</span>
-                Eveniment
-            </span>
-            <h3>${post.title}</h3>
-            <div class="flex items-center gap-2.5 text-sm mb-2 font-semibold" style="color: var(--text-secondary);">
-                <span class="material-icons-round text-lg" style="color: var(--neon-cyan);">calendar_today</span>
-                <span>${dateStr}, ${post.eventTime}</span>
-            </div>
-            <div class="flex items-center gap-2.5 text-sm mb-3 font-semibold" style="color: var(--text-secondary);">
-                <span class="material-icons-round text-lg" style="color: var(--neon-cyan);">location_on</span>
-                <span class="truncate">${location}</span>
-            </div>
-            <p>${post.description}</p>
-            ${!post.isFree && post.price ? `<div class="price">${post.price} RON</div>` : post.isFree ? `<div class="inline-block mt-3 px-4 py-1.5 text-sm font-extrabold rounded-full glass-card" style="background: rgba(57, 255, 20, 0.2); border: 1px solid var(--neon-green); color: var(--neon-green);">GRATUIT</div>` : ''}
-        </div>
-
-        <!-- Contact Button -->
-        <div class="absolute bottom-5 right-5 z-10">
-            ${post.authorPhone ? `
-                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', 'event')" class="btn-primary flex items-center gap-2.5 py-3 px-5" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: var(--radius-full); box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                    <span class="font-bold">WhatsApp</span>
-                </button>
-            ` : `
-                <button onclick="event.stopPropagation(); showToast('Mesagerie în curând!', 'info')" class="btn-primary flex items-center gap-2.5 py-3 px-5">
-                    <span class="material-icons-round text-lg">message</span>
-                    <span class="font-bold">Mesaj</span>
-                </button>
-            `}
         </div>
     `;
 
@@ -1818,9 +1871,11 @@ function renderSaleDetails(post, container) {
 
             <!-- Contact Button -->
             ${cleanPhone ? `
-            <a href="${waHref}" target="_blank" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-sm text-center flex items-center justify-center gap-2 hover:bg-green-600 transition-colors shadow-lg">
-                <span class="material-icons-round">chat</span>
-                Contactează pe WhatsApp
+            <a href="${waHref}" target="_blank" class="w-full text-white py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all" style="background: #25D366;">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                WhatsApp
             </a>
             ` : ''}
         </div>
@@ -1858,13 +1913,13 @@ function renderEventDetails(post, container) {
             ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
 
             <!-- Date & Time -->
-            <div class="bg-purple-500/20 p-4 rounded-2xl border-2 border-purple-500">
+            <div class="bg-brand-primary/20 p-4 rounded-2xl border-2 border-brand-primary">
                 <div class="flex items-center gap-3">
-                    <span class="material-icons-round text-purple-600 text-3xl">calendar_today</span>
+                    <span class="material-icons-round text-brand-primary text-3xl">calendar_today</span>
                     <div>
-                        <p class="text-xs font-bold text-purple-600 uppercase">Când?</p>
-                        <p class="text-lg font-bold text-purple-200 capitalize">${dateStr}</p>
-                        <p class="text-sm font-bold text-purple-400">Ora: ${post.eventTime}</p>
+                        <p class="text-xs font-bold text-brand-primary uppercase">Când?</p>
+                        <p class="text-lg font-bold text-brand-primary capitalize">${dateStr}</p>
+                        <p class="text-sm font-bold text-brand-primary">Ora: ${post.eventTime}</p>
                     </div>
                 </div>
             </div>
@@ -1895,9 +1950,9 @@ function renderEventDetails(post, container) {
             </div>
 
             <!-- Price -->
-            <div class="bg-purple-500/20 p-4 rounded-2xl border-2 border-purple-500">
-                <p class="text-xs font-bold text-purple-600 uppercase mb-1">Preț Participare</p>
-                <p class="text-2xl font-extrabold text-purple-200">${priceDisplay}</p>
+            <div class="bg-brand-primary/20 p-4 rounded-2xl border-2 border-brand-primary">
+                <p class="text-xs font-bold text-brand-primary uppercase mb-1">Preț Participare</p>
+                <p class="text-2xl font-extrabold text-brand-primary">${priceDisplay}</p>
             </div>
 
             <!-- Description -->
