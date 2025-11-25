@@ -6,7 +6,7 @@ import { messaging } from '../config/firebase-init.js';
 import { getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 import { db, getDocPath } from '../config/firebase-init.js';
 import { doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getUid } from '../core/auth.js';
+import { getCurrentUser } from '../core/state.js';
 import { showToast } from '../ui/toast.js';
 
 /**
@@ -37,9 +37,9 @@ async function saveMessagingDeviceToken() {
         const fcmToken = await getToken(messaging, { vapidKey: 'BBgqJC5P7OyOQHuUgcjWScfIR-vjwicOuHEkyFup7-wrPubZiHUfUlfdB77_d4XT3lLs34lDaAm90IuE_IymJxY' });
         if (fcmToken) {
             console.log('Got FCM token:', fcmToken);
-            const uid = getUid();
-            if (uid) {
-                const userDocRef = doc(db, 'users', uid);
+            const user = getCurrentUser();
+            if (user) {
+                const userDocRef = doc(db, 'users', user.uid);
                 await updateDoc(userDocRef, {
                     fcmTokens: arrayUnion(fcmToken)
                 });
