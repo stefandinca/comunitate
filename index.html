@@ -108,11 +108,11 @@
                     <div class="w-full border-t" style="border-color: var(--glass-border);"></div>
                 </div>
                 <div class="relative flex justify-center text-sm">
-                    <span class="px-3 text-xs uppercase font-semibold" style="background: var(--carbon); color: var(--text-tertiary);">sau continuă cu</span>
+                    <span class="px-3 text-xs uppercase font-semibold" style=" color: var(--text-tertiary);">sau continuă cu</span>
                 </div>
             </div>
 
-            <button type="button" onclick="loginWithGoogle()" class="w-full glass-card py-4 font-bold text-base flex justify-center items-center gap-3 hover:scale-105 transition-transform">
+            <button type="button" onclick="loginWithGoogle()" class="w-full glass-card py-4 my-4 font-bold text-base flex justify-center items-center gap-3 hover:scale-105 transition-transform">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6">
                 <span style="color: var(--text-primary);">Google</span>
             </button>
@@ -124,19 +124,19 @@
     <!-- ================= VIEW: FEED ================= -->
     <section id="screen-feed" class="hidden flex-col h-full relative">
         <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b" style="border-color: var(--glass-border); margin: 0;">
-            <!-- Logo -->
+            <!-- Logo 
             <div class="w-11 h-11 flex items-center justify-center flex-shrink-0 glass-card rounded-full neon-glow p-2">
                 <span class="material-icons-round" style="color: var(--neon-cyan); font-size: 24px;">cottage</span>
-            </div>
+            </div>-->
 
             <!-- Search Bar -->
-            <div class="search-bar relative flex-1">
-                <span class="material-icons-round">search</span>
-                <input type="text" placeholder="Caută în comunitate..." id="search-input">
+            <div class="search-bar relative flex-1 shrink">
+                
+                <input type="text"  placeholder="Caută în comunitate..." id="search-input">
                 <button id="clear-search-btn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 p-1.5 glass-card rounded-full">
                     <span class="material-icons-round text-sm">close</span>
                 </button>
-                <div id="search-history" class="hidden absolute top-full left-0 right-0 mt-2 glass-card shadow-lg z-10" style="border-radius: var(--radius-md);">
+                <div id="search-history" class="hidden absolute top-full left-0 right-0 mt-2 glass-card shadow-lg z-10">
                 </div>
             </div>
 
@@ -157,69 +157,24 @@
                 <p style="color: var(--text-secondary); font-size: 15px;">Descoperă noutățile din comunitatea ta</p>
             </div>
 
-            <!-- Category Cards -->
-            <div class="mb-6 -mx-4 px-4">
-                <div class="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
-                    <!-- Toate -->
-                    <div onclick="filterPosts('all')" data-filter="all" class="category-card active">
-                        <div class="category-icon">
-                            <span class="material-icons-round">apps</span>
-                        </div>
-                        <div class="category-label">Toate</div>
-                    </div>
-
-                    <!-- Bazar -->
-                    <div onclick="filterPosts('sale')" data-filter="sale" class="category-card">
-                        <div class="category-icon">
-                            <span class="material-icons-round">storefront</span>
-                        </div>
-                        <div class="category-label">Bazar</div>
-                    </div>
-
-                    <!-- Cereri Împrumut -->
-                    <div onclick="filterPosts('borrow')" data-filter="borrow" class="category-card">
-                        <div class="category-icon">
-                            <span class="material-icons-round">volunteer_activism</span>
-                        </div>
-                        <div class="category-label">Cereri<br>împrumut</div>
-                    </div>
-
-                    <!-- Evenimente -->
-                    <div onclick="filterPosts('event')" data-filter="event" class="category-card">
-                        <div class="category-icon">
-                            <span class="material-icons-round">event</span>
-                        </div>
-                        <div class="category-label">Evenimente</div>
-                    </div>
-
-                    <!-- Interes Local -->
-                    <div onclick="filterPosts('local')" data-filter="local" class="category-card">
-                        <div class="category-icon">
-                            <span class="material-icons-round">location_on</span>
-                        </div>
-                        <div class="category-label">Interes<br>Local</div>
-                    </div>
-
-                    <!-- Afaceri Locale -->
-                    <div onclick="filterPosts('business')" data-filter="business" class="category-card">
-                        <div class="category-icon">
-                            <span class="material-icons-round">business_center</span>
-                        </div>
-                        <div class="category-label">Afaceri<br>locale</div>
-                    </div>
-
-                    <!-- Recomandări -->
-                    <div onclick="filterPosts('recommendation')" data-filter="recommendation" class="category-card">
-                        <div class="category-icon">
-                            <span class="material-icons-round">star_border</span>
-                        </div>
-                        <div class="category-label">Recomandări</div>
-                    </div>
+            <!-- Category Dropdown -->
+            <div class="mb-6 px-4">
+                <div class="relative">
+                    <select id="category-filter" onchange="filterPosts(this.value)" class="category-dropdown w-full">
+                        <option value="all">📋 Toate</option>
+                        <option value="sale">🏪 Bazar</option>
+                        <option value="borrow">🤝 Cereri Împrumut</option>
+                        <option value="event">📅 Evenimente</option>
+                        <option value="local">📍 Interes Local</option>
+                        <option value="business">💼 Afaceri Locale</option>
+                        <option value="recommendation">⭐ Recomandări</option>
+                    </select>
+                    <span class="material-icons-round category-dropdown-icon">expand_more</span>
                 </div>
             </div>
 
             <div id="feed-container" class="flex flex-col gap-5">
-                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">refresh</span></div>
+                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan);">refresh</span></div>
             </div>
         </div>
     </section>
@@ -296,6 +251,23 @@
         </div>
     </section>
 
+    <!-- ================= VIEW: MESSAGES ================= -->
+    <section id="screen-messages" class="hidden flex-col h-full relative">
+        <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b" style="border-color: var(--glass-border); margin: 0;">
+            <div class="flex-1">
+                <h2 class="text-2xl font-extrabold holographic-text">Mesaje</h2>
+                <p class="text-xs font-semibold uppercase tracking-wide" style="color: var(--text-tertiary);">Conversațiile tale</p>
+            </div>
+            <span class="material-icons-round text-3xl" style="color: var(--neon-cyan); filter: drop-shadow(0 0 10px var(--neon-cyan));">chat</span>
+        </header>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
+            <div id="conversations-container" class="p-5 space-y-3">
+                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan);">refresh</span></div>
+            </div>
+        </div>
+    </section>
+
     <!-- ================= VIEW: ADMIN DASHBOARD ================= -->
     <section id="screen-admin" class="hidden flex-col h-full relative">
         <header class="glass-card px-5 py-5 flex items-center gap-4 z-20 sticky top-0 rounded-none border-0 border-b" style="border-color: var(--glass-border); margin: 0; background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
@@ -311,7 +283,7 @@
 
         <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
             <!-- Stats Cards -->
-            <div class="p-5 grid grid-cols-3 gap-4">
+            <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="glass-card neon-glow" style="background: linear-gradient(135deg, rgba(0, 102, 255, 0.2) 0%, rgba(0, 240, 255, 0.1) 100%), var(--glass-light);">
                     <div class="text-3xl font-extrabold mb-1 holographic-text" id="admin-total-posts">0</div>
                     <div class="text-[10px] uppercase font-bold tracking-wide" style="color: var(--text-tertiary);">Total Posts</div>
@@ -662,7 +634,7 @@
             <div class="p-5 glass-card flex justify-between items-center z-10 sticky top-0 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
                 <h3 class="font-extrabold text-xl holographic-text" id="post-detail-title">Detalii</h3>
                 <div class="flex gap-3">
-                    <button onclick="openCommentsFromDetail()" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                    <button onclick="openCommentsFromDetail()" class="glass-card p-2.5 rounded-full items-center">
                         <span class="material-icons-round" style="color: var(--text-secondary);">chat_bubble_outline</span>
                     </button>
                     <button onclick="toggleModal('modal-post-details', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
@@ -675,6 +647,37 @@
             <div id="post-detail-content" class="flex-1 overflow-y-auto hide-scrollbar p-6">
                 <!-- Content will be populated dynamically -->
             </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: CONVERSATION ================= -->
+    <div id="modal-conversation" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center sm:justify-center transition-all modal-background" style="background: rgba(0, 0, 0, 0.9); backdrop-filter: var(--blur-heavy);">
+        <div class="glass-card w-full sm:max-w-md h-[85vh] sm:h-[700px] p-0 flex flex-col overflow-hidden neon-glow" style="border-radius: var(--radius-xl) var(--radius-xl) 0 0; margin: 0;">
+            <!-- Header -->
+            <div class="p-5 glass-card flex items-center gap-4 z-10 border-0 border-b rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <button onclick="toggleModal('modal-conversation', false)" class="glass-card p-2.5 rounded-full transition-all hover:scale-110 neon-glow">
+                    <span class="material-icons-round" style="color: var(--text-secondary);">arrow_back</span>
+                </button>
+                <div class="w-10 h-10 rounded-full p-0.5 flex-shrink-0" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
+                    <img id="conversation-user-avatar" src="" class="w-full h-full rounded-full object-cover" style="border: 2px solid var(--carbon);">
+                </div>
+                <div class="flex-1">
+                    <h3 id="conversation-user-name" class="font-extrabold text-lg" style="color: var(--text-primary);">Utilizator</h3>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="messages-container" class="flex-1 overflow-y-auto hide-scrollbar p-5 space-y-4">
+                <!-- Messages will be rendered here -->
+            </div>
+
+            <!-- Message Input -->
+            <form id="message-form" class="p-5 glass-card flex gap-3 items-center safe-pb border-0 border-t rounded-none" style="border-color: var(--glass-border); margin: 0;">
+                <input type="text" id="message-input" required placeholder="Scrie un mesaj..." class="flex-1" style="border-radius: var(--radius-full);">
+                <button type="submit" class="fab-pulse p-3 rounded-full flex-shrink-0 flex items-center justify-center neon-glow">
+                    <span class="material-icons-round text-base" style="color: var(--void-black);">send</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -720,9 +723,10 @@
         </button>
 
         <!-- Messages -->
-        <button class="nav-btn flex flex-col items-center transition-all gap-1.5" style="color: var(--text-tertiary);">
+        <button onclick="showScreen('messages')" id="nav-messages" class="nav-btn flex flex-col items-center transition-all gap-1.5 relative" style="color: var(--text-tertiary);">
             <span class="material-icons-round text-2xl">chat_bubble_outline</span>
             <span class="text-[9px] font-bold uppercase tracking-wide">Mesaje</span>
+            <span id="messages-badge" class="hidden absolute top-0 right-0 w-3 h-3 rounded-full border-2" style="background: var(--neon-pink); border-color: var(--carbon);"></span>
         </button>
 
         <!-- FAB Create Button -->

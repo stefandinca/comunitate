@@ -35,6 +35,8 @@ const COLL_POSTS = 'posts';
 const COLL_USERS = 'users';
 const COLL_COMMENTS = 'comments';
 const COLL_NOTIF = 'notifications';
+const COLL_CONVERSATIONS = 'conversations';
+const COLL_MESSAGES = 'messages';
 
 function getCollectionRef(colName) {
     if (shouldUseCustomToken) {
@@ -90,6 +92,10 @@ let unsubscribeMyPosts = null;
 let unsubscribeInterested = null;
 let unsubscribeComments = null;
 let unsubscribeNotifs = null;
+let unsubscribeConversations = null;
+let unsubscribeMessages = null;
+let currentConversationId = null;
+let currentChatUserId = null;
 
 // --- HELPER FUNCTIONS ---
 function isSuperAdmin() {
@@ -123,13 +129,15 @@ const screens = {
     feed: document.getElementById('screen-feed'),
     profile: document.getElementById('screen-profile'),
     admin: document.getElementById('screen-admin'),
+    messages: document.getElementById('screen-messages'),
     create: document.getElementById('modal-create'),
     edit: document.getElementById('modal-edit'),
     comments: document.getElementById('modal-comments'),
     notifications: document.getElementById('modal-notifications'),
     publicProfile: document.getElementById('modal-public-profile'),
     locationPicker: document.getElementById('modal-location-picker'),
-    postDetails: document.getElementById('modal-post-details')
+    postDetails: document.getElementById('modal-post-details'),
+    conversation: document.getElementById('modal-conversation')
 };
 
 const feedContainer = document.getElementById('feed-container');
@@ -139,6 +147,8 @@ const userDisplayName = document.getElementById('user-display-name');
 const searchInput = document.getElementById('search-input');
 const clearSearchBtn = document.getElementById('clear-search-btn');
 const searchHistoryContainer = document.getElementById('search-history');
+const conversationsContainer = document.getElementById('conversations-container');
+const messagesContainer = document.getElementById('messages-container');
 
 
 
@@ -148,6 +158,7 @@ const createForm = document.getElementById('create-form');
 const editForm = document.getElementById('edit-form');
 const profileForm = document.getElementById('profile-form');
 const commentForm = document.getElementById('comment-form');
+const messageForm = document.getElementById('message-form');
 
 // --- NAVIGATION LOGIC ---
 function showScreen(screenName) {
@@ -191,6 +202,14 @@ function showScreen(screenName) {
         navProfile.classList.add('opacity-100');
         loadUserProfile();
         switchProfileTab('my-posts');
+    } else if (screenName === 'messages') {
+        screens.messages.classList.remove('hidden');
+        screens.messages.classList.add('flex');
+        document.getElementById('bottom-nav').classList.remove('hidden');
+        const navMessages = document.getElementById('nav-messages');
+        navMessages.classList.remove('opacity-60');
+        navMessages.classList.add('opacity-100');
+        loadConversations();
     } else if (screenName === 'admin') {
         if (!isSuperAdmin()) {
             showToast('Acces interzis!', 'error');
@@ -233,6 +252,11 @@ function toggleModal(modalId, show) {
         }
         if (modalId === 'modal-public-profile') {
             if (unsubscribePublicProfilePosts) unsubscribePublicProfilePosts();
+        }
+        if (modalId === 'modal-conversation') {
+            if (unsubscribeMessages) unsubscribeMessages();
+            currentConversationId = null;
+            currentChatUserId = null;
         }
     }
 }
@@ -285,6 +309,7 @@ onAuthStateChanged(auth, async (user) => {
             showScreen('feed');
         }
         listenForNotifications();
+        listenForUnreadMessages();
     } else {
         currentUser = null;
         showScreen('login');
@@ -521,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSearchHistory();
     }
 
-    function performSearch(query) {
+    async function performSearch(query) {
         if (query.length === 0) {
             isSearching = false;
             renderPosts(allPostsCache);
@@ -530,6 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isSearching = true;
         const lowerCaseQuery = query.toLowerCase();
+
+        // Filter posts
         const filteredPosts = allPostsCache.filter(post => {
             const titleMatch = post.title.toLowerCase().includes(lowerCaseQuery);
             const descriptionMatch = post.description.toLowerCase().includes(lowerCaseQuery);
@@ -537,8 +564,91 @@ document.addEventListener('DOMContentLoaded', () => {
             return titleMatch || descriptionMatch || authorMatch;
         });
 
-        renderPosts(filteredPosts);
+        // Search users
+        const usersSnapshot = await getDocs(getCollectionRef(COLL_USERS));
+        const matchedUsers = [];
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            if (userData.name && userData.name.toLowerCase().includes(lowerCaseQuery)) {
+                matchedUsers.push({ id: doc.id, ...userData });
+            }
+        });
+
+        renderSearchResults(filteredPosts, matchedUsers);
         if(query.length > 2) saveSearchQuery(query);
+    }
+
+    function renderSearchResults(posts, users) {
+        feedContainer.innerHTML = '';
+
+        // Render users section if there are matches
+        if (users.length > 0) {
+            const usersSection = document.createElement('div');
+            usersSection.className = 'mb-6';
+            usersSection.innerHTML = `
+                <h3 class="text-lg font-bold mb-3 px-2" style="color: var(--text-primary);">
+                    <span class="material-icons-round text-sm align-middle mr-2" style="color: var(--neon-cyan);">people</span>
+                    Utilizatori (${users.length})
+                </h3>
+            `;
+
+            const usersGrid = document.createElement('div');
+            usersGrid.className = 'grid grid-cols-1 gap-3 mb-6';
+
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'glass-card p-4 flex items-center gap-4 cursor-pointer transition-all hover:scale-[1.02] neon-glow';
+                userCard.onclick = () => viewUserProfile(user.id);
+
+                const avatar = user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`;
+
+                userCard.innerHTML = `
+                    <div class="w-12 h-12 rounded-full p-0.5 flex-shrink-0" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
+                        <img src="${avatar}" class="w-full h-full rounded-full object-cover" style="border: 2px solid var(--carbon);">
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-bold" style="color: var(--text-primary);">${user.name}</h4>
+                        <p class="text-xs" style="color: var(--text-tertiary);">Membru comunitate</p>
+                    </div>
+                    <span class="material-icons-round" style="color: var(--text-secondary);">arrow_forward</span>
+                `;
+
+                usersGrid.appendChild(userCard);
+            });
+
+            usersSection.appendChild(usersGrid);
+            feedContainer.appendChild(usersSection);
+        }
+
+        // Render posts section
+        if (posts.length > 0) {
+            const postsSection = document.createElement('div');
+            postsSection.innerHTML = `
+                <h3 class="text-lg font-bold mb-3 px-2" style="color: var(--text-primary);">
+                    <span class="material-icons-round text-sm align-middle mr-2" style="color: var(--neon-cyan);">article</span>
+                    Postări (${posts.length})
+                </h3>
+            `;
+            feedContainer.appendChild(postsSection);
+
+            posts.forEach(post => {
+                if (post.type === 'event') {
+                    feedContainer.appendChild(createEventCard(post));
+                } else {
+                    feedContainer.appendChild(createPostCard(post));
+                }
+            });
+        }
+
+        // Show no results message
+        if (posts.length === 0 && users.length === 0) {
+            feedContainer.innerHTML = `
+                <div class="text-center py-16">
+                    <span class="material-icons-round text-6xl mb-4" style="color: var(--text-tertiary);">search_off</span>
+                    <p class="text-sm font-semibold" style="color: var(--text-secondary);">Niciun rezultat găsit</p>
+                </div>
+            `;
+        }
     }
 
     function saveSearchQuery(query) {
@@ -1392,16 +1502,31 @@ window.viewUserProfile = async (targetUid) => {
             const avatarSrc = data.avatar || `https://ui-avatars.com/api/?name=${data.name}&background=random`;
             document.getElementById('public-prof-avatar').src = avatarSrc;
 
-            if (data.phone) {
-                let cleanPhone = data.phone.replace(/\D/g, ''); 
-                if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1); 
-                if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
-                
-                actionsDiv.innerHTML = `
-                    <a href="https://wa.me/${cleanPhone}" target="_blank" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:bg-green-200 transition-colors">
-                        <span class="material-icons-round text-sm">chat</span> WhatsApp
-                    </a>
-                `;
+            // Add action buttons if not viewing own profile
+            if (currentUser && targetUid !== currentUser.uid) {
+                const buttons = [];
+
+                // Message button
+                buttons.push(`
+                    <button onclick="startConversation('${targetUid}')" class="glass-card px-4 py-2 text-sm font-bold flex items-center gap-2 transition-all hover:scale-105 neon-glow" style="border-radius: var(--radius-full); color: var(--neon-cyan);">
+                        <span class="material-icons-round text-sm">chat_bubble</span> Trimite Mesaj
+                    </button>
+                `);
+
+                // WhatsApp button
+                if (data.phone) {
+                    let cleanPhone = data.phone.replace(/\D/g, '');
+                    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+                    if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
+
+                    buttons.push(`
+                        <a href="https://wa.me/${cleanPhone}" target="_blank" class="glass-card px-4 py-2 text-sm font-bold flex items-center gap-2 transition-all hover:scale-105" style="border-radius: var(--radius-full); color: var(--neon-green);">
+                            <span class="material-icons-round text-sm">chat</span> WhatsApp
+                        </a>
+                    `);
+                }
+
+                actionsDiv.innerHTML = buttons.join('');
             }
         } else {
             document.getElementById('public-prof-name').innerText = "Utilizator necunoscut";
@@ -1452,7 +1577,7 @@ window.viewUserProfile = async (targetUid) => {
 // --- CARD CREATION FUNCTIONS ---
 function createPostCard(post) {
     const article = document.createElement('article');
-    article.className = "post-card-new";
+    article.className = "post-card-new ";
 
     const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
     const avatarSrc = post.authorAvatar || `https://ui-avatars.com/api/?name=${post.authorName}&background=random`;
@@ -1470,10 +1595,10 @@ function createPostCard(post) {
                 </div>
             </div>
             <div class="flex items-center gap-1">
-                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="text-red-500 hover:text-red-700 p-1" title="Admin: Delete Post">
+                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="p-2 rounded-full glass-card" style="color: var(--neon-pink);" title="Admin: Delete Post">
                     <span class="material-icons-round text-sm">delete</span>
                 </button>` : ''}
-                <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
+                <button onclick="event.stopPropagation()" class="p-2 rounded-full glass-card" style="color: var(--text-secondary);">
                     <span class="material-icons-round">more_horiz</span>
                 </button>
             </div>
@@ -1506,18 +1631,18 @@ function createPostCard(post) {
         </div>
 
         <!-- Contact Button - Bottom Right -->
-        <div class="absolute bottom-4 right-4 flex justify-end">
+        <div class="absolute bottom-5 right-5 z-10">
             ${post.authorPhone ? `
-                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', '${post.type}')" class="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
+                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', '${post.type}')" class="btn-primary flex items-center gap-2.5 py-3 px-5" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: var(--radius-full); box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                     </svg>
-                    <span class="text-base font-extrabold">Contactează pe WhatsApp</span>
+                    <span class="font-bold">WhatsApp</span>
                 </button>
             ` : `
-                <button onclick="event.stopPropagation(); showToast('Mesagerie în curând!', 'info')" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
-                    <span class="material-icons-round">message</span>
-                    <span class="text-base font-extrabold">Trimite Mesaj</span>
+                <button onclick="event.stopPropagation(); showToast('Mesagerie în curând!', 'info')" class="btn-primary flex items-center gap-2.5 py-3 px-5">
+                    <span class="material-icons-round text-lg">message</span>
+                    <span class="font-bold">Mesaj</span>
                 </button>
             `}
         </div>
@@ -1554,10 +1679,10 @@ function createEventCard(post) {
                 </div>
             </div>
             <div class="flex items-center gap-1">
-                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="text-red-500 hover:text-red-700 p-1" title="Admin: Delete Event">
+                ${isSuperAdmin() ? `<button onclick="event.stopPropagation(); adminDeletePost('${post.id}')" class="p-2 rounded-full glass-card" style="color: var(--neon-pink);" title="Admin: Delete Event">
                     <span class="material-icons-round text-sm">delete</span>
                 </button>` : ''}
-                <button onclick="event.stopPropagation()" class="text-gray-400 hover:text-gray-600">
+                <button onclick="event.stopPropagation()" class="p-2 rounded-full glass-card" style="color: var(--text-secondary);">
                     <span class="material-icons-round">more_horiz</span>
                 </button>
             </div>
@@ -1588,31 +1713,31 @@ function createEventCard(post) {
                 Eveniment
             </span>
             <h3>${post.title}</h3>
-            <div class="flex items-center gap-2.5 text-gray-600 text-sm mb-2 font-semibold">
-                <span class="material-icons-round text-lg">calendar_today</span>
+            <div class="flex items-center gap-2.5 text-sm mb-2 font-semibold" style="color: var(--text-secondary);">
+                <span class="material-icons-round text-lg" style="color: var(--neon-cyan);">calendar_today</span>
                 <span>${dateStr}, ${post.eventTime}</span>
             </div>
-            <div class="flex items-center gap-2.5 text-gray-600 text-sm mb-3 font-semibold">
-                <span class="material-icons-round text-lg">location_on</span>
+            <div class="flex items-center gap-2.5 text-sm mb-3 font-semibold" style="color: var(--text-secondary);">
+                <span class="material-icons-round text-lg" style="color: var(--neon-cyan);">location_on</span>
                 <span class="truncate">${location}</span>
             </div>
             <p>${post.description}</p>
-            ${!post.isFree && post.price ? `<div class="price">${post.price} RON</div>` : post.isFree ? `<div class="inline-block mt-3 px-4 py-1.5 bg-green-100 text-green-700 text-sm font-extrabold rounded-full">GRATUIT</div>` : ''}
+            ${!post.isFree && post.price ? `<div class="price">${post.price} RON</div>` : post.isFree ? `<div class="inline-block mt-3 px-4 py-1.5 text-sm font-extrabold rounded-full glass-card" style="background: rgba(57, 255, 20, 0.2); border: 1px solid var(--neon-green); color: var(--neon-green);">GRATUIT</div>` : ''}
         </div>
 
         <!-- Contact Button -->
-        <div class="absolute bottom-4 right-4 flex justify-end">
+        <div class="absolute bottom-5 right-5 z-10">
             ${post.authorPhone ? `
-                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', 'event')" class="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
+                <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', 'event')" class="btn-primary flex items-center gap-2.5 py-3 px-5" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: var(--radius-full); box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                     </svg>
-                    <span class="text-base font-extrabold">Întreabă Organizatorul</span>
+                    <span class="font-bold">WhatsApp</span>
                 </button>
             ` : `
-                <button onclick="event.stopPropagation(); showToast('Mesagerie în curând!', 'info')" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
-                    <span class="material-icons-round">message</span>
-                    <span class="text-base font-extrabold">Trimite Mesaj</span>
+                <button onclick="event.stopPropagation(); showToast('Mesagerie în curând!', 'info')" class="btn-primary flex items-center gap-2.5 py-3 px-5">
+                    <span class="material-icons-round text-lg">message</span>
+                    <span class="font-bold">Mesaj</span>
                 </button>
             `}
         </div>
@@ -1693,7 +1818,7 @@ function renderSaleDetails(post, container) {
 
             <!-- Contact Button -->
             ${cleanPhone ? `
-            <a href="${waHref}" target="_blank" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2 hover:bg-green-600 transition-colors shadow-lg">
+            <a href="${waHref}" target="_blank" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-sm text-center flex items-center justify-center gap-2 hover:bg-green-600 transition-colors shadow-lg">
                 <span class="material-icons-round">chat</span>
                 Contactează pe WhatsApp
             </a>
@@ -1733,13 +1858,13 @@ function renderEventDetails(post, container) {
             ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
 
             <!-- Date & Time -->
-            <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
+            <div class="bg-purple-500/20 p-4 rounded-2xl border-2 border-purple-500">
                 <div class="flex items-center gap-3">
                     <span class="material-icons-round text-purple-600 text-3xl">calendar_today</span>
                     <div>
                         <p class="text-xs font-bold text-purple-600 uppercase">Când?</p>
-                        <p class="text-lg font-bold text-gray-800 capitalize">${dateStr}</p>
-                        <p class="text-sm font-bold text-gray-600">Ora: ${post.eventTime}</p>
+                        <p class="text-lg font-bold text-purple-200 capitalize">${dateStr}</p>
+                        <p class="text-sm font-bold text-purple-400">Ora: ${post.eventTime}</p>
                     </div>
                 </div>
             </div>
@@ -1770,9 +1895,9 @@ function renderEventDetails(post, container) {
             </div>
 
             <!-- Price -->
-            <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
+            <div class="bg-purple-500/20 p-4 rounded-2xl border-2 border-purple-500">
                 <p class="text-xs font-bold text-purple-600 uppercase mb-1">Preț Participare</p>
-                <p class="text-2xl font-extrabold text-purple-600">${priceDisplay}</p>
+                <p class="text-2xl font-extrabold text-purple-200">${priceDisplay}</p>
             </div>
 
             <!-- Description -->
@@ -2363,6 +2488,306 @@ function getCategoryLabel(category) {
         'recommendation': 'Recomandare'
     };
     return labels[category] || category;
+}
+
+// --- MESSAGING SYSTEM ---
+
+// Load all conversations for current user
+function loadConversations() {
+    if (!currentUser) return;
+
+    if (unsubscribeConversations) unsubscribeConversations();
+
+    conversationsContainer.innerHTML = '<div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan);">refresh</span></div>';
+
+    const q = query(
+        getCollectionRef(COLL_CONVERSATIONS),
+        where('participants', 'array-contains', currentUser.uid),
+        orderBy('lastMessageTime', 'desc')
+    );
+
+    unsubscribeConversations = onSnapshot(q, async (snapshot) => {
+        conversationsContainer.innerHTML = '';
+
+        if (snapshot.empty) {
+            conversationsContainer.innerHTML = `
+                <div class="text-center py-16">
+                    <span class="material-icons-round text-6xl mb-4" style="color: var(--text-tertiary);">chat_bubble_outline</span>
+                    <p class="text-sm font-semibold" style="color: var(--text-secondary);">Nu ai nicio conversație încă</p>
+                    <p class="text-xs mt-2" style="color: var(--text-tertiary);">Trimite un mesaj unui vecin pentru a începe o conversație</p>
+                </div>
+            `;
+            return;
+        }
+
+        const conversations = [];
+        for (const doc of snapshot.docs) {
+            const convData = { id: doc.id, ...doc.data() };
+            const otherUserId = convData.participants.find(uid => uid !== currentUser.uid);
+            const otherUserDoc = await getDoc(getDocPath(COLL_USERS, otherUserId));
+            if (otherUserDoc.exists()) {
+                convData.otherUser = { id: otherUserId, ...otherUserDoc.data() };
+                conversations.push(convData);
+            }
+        }
+
+        conversations.forEach(conv => {
+            conversationsContainer.appendChild(createConversationCard(conv));
+        });
+    });
+}
+
+// Create conversation card
+function createConversationCard(conv) {
+    const card = document.createElement('div');
+    card.className = 'glass-card p-4 flex items-center gap-4 cursor-pointer transition-all hover:scale-[1.02] neon-glow';
+    card.onclick = () => openConversation(conv.id, conv.otherUser.id);
+
+    const hasUnread = conv.unreadCount && conv.unreadCount[currentUser.uid] > 0;
+    const unreadCount = hasUnread ? conv.unreadCount[currentUser.uid] : 0;
+
+    const avatar = conv.otherUser.avatar || `https://ui-avatars.com/api/?name=${conv.otherUser.name}&background=random`;
+    const lastMessageTime = conv.lastMessageTime ? timeAgo(conv.lastMessageTime.toDate()) : '';
+
+    card.innerHTML = `
+        <div class="w-14 h-14 rounded-full p-0.5 flex-shrink-0 ${hasUnread ? 'neon-glow' : ''}" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));">
+            <img src="${avatar}" class="w-full h-full rounded-full object-cover" style="border: 2px solid var(--carbon);">
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="font-bold text-base truncate" style="color: var(--text-primary);">${conv.otherUser.name}</h3>
+                <span class="text-xs flex-shrink-0 ml-2" style="color: var(--text-tertiary);">${lastMessageTime}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <p class="text-sm truncate ${hasUnread ? 'font-bold' : ''}" style="color: ${hasUnread ? 'var(--neon-cyan)' : 'var(--text-secondary)'};">${conv.lastMessage || 'Niciun mesaj încă'}</p>
+                ${hasUnread ? `<span class="flex-shrink-0 ml-2 px-2 py-0.5 text-xs font-bold rounded-full" style="background: var(--neon-pink); color: var(--void-black);">${unreadCount}</span>` : ''}
+            </div>
+        </div>
+    `;
+
+    return card;
+}
+
+// Open conversation with a specific user
+window.openConversation = async (conversationId, otherUserId) => {
+    if (!currentUser) return;
+
+    currentConversationId = conversationId;
+    currentChatUserId = otherUserId;
+
+    // Get other user data
+    const otherUserDoc = await getDoc(getDocPath(COLL_USERS, otherUserId));
+    if (!otherUserDoc.exists()) {
+        showToast('Utilizatorul nu a fost găsit', 'error');
+        return;
+    }
+
+    const otherUser = otherUserDoc.data();
+    const avatar = otherUser.avatar || `https://ui-avatars.com/api/?name=${otherUser.name}&background=random`;
+
+    document.getElementById('conversation-user-avatar').src = avatar;
+    document.getElementById('conversation-user-name').textContent = otherUser.name;
+
+    toggleModal('modal-conversation', true);
+    loadMessages(conversationId);
+
+    // Mark messages as read
+    await markMessagesAsRead(conversationId);
+}
+
+// Load messages in a conversation
+function loadMessages(conversationId) {
+    if (unsubscribeMessages) unsubscribeMessages();
+
+    messagesContainer.innerHTML = '<div class="flex justify-center py-8"><span class="material-icons-round animate-spin text-2xl" style="color: var(--neon-cyan);">refresh</span></div>';
+
+    const q = query(
+        collection(db, shouldUseCustomToken ? `artifacts/${appId}/public/data/${COLL_CONVERSATIONS}/${conversationId}/${COLL_MESSAGES}` : `${COLL_CONVERSATIONS}/${conversationId}/${COLL_MESSAGES}`),
+        orderBy('timestamp', 'asc')
+    );
+
+    unsubscribeMessages = onSnapshot(q, (snapshot) => {
+        messagesContainer.innerHTML = '';
+
+        if (snapshot.empty) {
+            messagesContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-sm" style="color: var(--text-tertiary);">Trimite primul mesaj</p>
+                </div>
+            `;
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const message = { id: doc.id, ...doc.data() };
+            messagesContainer.appendChild(createMessageBubble(message));
+        });
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+}
+
+// Create message bubble
+function createMessageBubble(message) {
+    const isMyMessage = message.senderId === currentUser.uid;
+    const bubble = document.createElement('div');
+    bubble.className = `flex ${isMyMessage ? 'justify-end' : 'justify-start'}`;
+
+    const time = message.timestamp ? timeAgo(message.timestamp.toDate()) : '';
+
+    if (isMyMessage) {
+        // My messages - cyan gradient with black text
+        bubble.innerHTML = `
+            <div class="max-w-[70%] p-3 rounded-2xl" style="background: linear-gradient(135deg, var(--neon-cyan), var(--electric-blue));">
+                <p class="text-sm break-words" style="color: var(--void-black);">${message.text}</p>
+                <span class="text-xs block mt-1 opacity-70" style="color: var(--void-black);">${time}</span>
+            </div>
+        `;
+    } else {
+        // Received messages - light background with dark text
+        bubble.innerHTML = `
+            <div class="max-w-[70%] p-3 rounded-2xl" style="background: var(--glass-strong); border: 1px solid var(--glass-border); backdrop-filter: var(--blur-medium);">
+                <p class="text-sm break-words" style="color: var(--text-primary);">${message.text}</p>
+                <span class="text-xs block mt-1 opacity-70" style="color: var(--text-secondary);">${time}</span>
+            </div>
+        `;
+    }
+
+    return bubble;
+}
+
+// Send message
+messageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser || !currentConversationId || !currentChatUserId) return;
+
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.disabled = true;
+
+    try {
+        // Add message to subcollection
+        const messagesRef = collection(db, shouldUseCustomToken ? `artifacts/${appId}/public/data/${COLL_CONVERSATIONS}/${currentConversationId}/${COLL_MESSAGES}` : `${COLL_CONVERSATIONS}/${currentConversationId}/${COLL_MESSAGES}`);
+        await addDoc(messagesRef, {
+            text,
+            senderId: currentUser.uid,
+            timestamp: serverTimestamp()
+        });
+
+        // Update conversation with last message
+        const convRef = getDocPath(COLL_CONVERSATIONS, currentConversationId);
+        const updateData = {
+            lastMessage: text,
+            lastMessageTime: serverTimestamp()
+        };
+
+        // Increment unread count for the other user
+        updateData[`unreadCount.${currentChatUserId}`] = increment(1);
+
+        await updateDoc(convRef, updateData);
+
+        input.value = '';
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showToast('Eroare la trimiterea mesajului', 'error');
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
+});
+
+// Mark messages as read
+async function markMessagesAsRead(conversationId) {
+    if (!currentUser) return;
+
+    try {
+        const convRef = getDocPath(COLL_CONVERSATIONS, conversationId);
+        await updateDoc(convRef, {
+            [`unreadCount.${currentUser.uid}`]: 0
+        });
+    } catch (error) {
+        console.error('Error marking messages as read:', error);
+    }
+}
+
+// Start a new conversation (called from user profile)
+window.startConversation = async (otherUserId) => {
+    if (!currentUser || currentUser.uid === otherUserId) return;
+
+    // Close the public profile modal first
+    toggleModal('modal-public-profile', false);
+
+    try {
+        // Check if conversation already exists
+        const q = query(
+            getCollectionRef(COLL_CONVERSATIONS),
+            where('participants', 'array-contains', currentUser.uid)
+        );
+
+        const snapshot = await getDocs(q);
+        let existingConvId = null;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.participants.includes(otherUserId)) {
+                existingConvId = doc.id;
+            }
+        });
+
+        if (existingConvId) {
+            // Open existing conversation
+            await openConversation(existingConvId, otherUserId);
+        } else {
+            // Create new conversation
+            const convData = {
+                participants: [currentUser.uid, otherUserId],
+                createdAt: serverTimestamp(),
+                lastMessage: '',
+                lastMessageTime: serverTimestamp(),
+                unreadCount: {
+                    [currentUser.uid]: 0,
+                    [otherUserId]: 0
+                }
+            };
+
+            const convRef = await addDoc(getCollectionRef(COLL_CONVERSATIONS), convData);
+            await openConversation(convRef.id, otherUserId);
+        }
+    } catch (error) {
+        console.error('Error starting conversation:', error);
+        showToast('Eroare la deschiderea conversației', 'error');
+    }
+}
+
+// Listen for unread messages and show badge
+function listenForUnreadMessages() {
+    if (!currentUser) return;
+
+    const q = query(
+        getCollectionRef(COLL_CONVERSATIONS),
+        where('participants', 'array-contains', currentUser.uid)
+    );
+
+    onSnapshot(q, (snapshot) => {
+        let totalUnread = 0;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.unreadCount && data.unreadCount[currentUser.uid]) {
+                totalUnread += data.unreadCount[currentUser.uid];
+            }
+        });
+
+        const badge = document.getElementById('messages-badge');
+        if (totalUnread > 0) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    });
 }
 
 window.toggleModal = toggleModal;

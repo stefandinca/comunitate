@@ -21,8 +21,8 @@
     --electric-blue: #0066ff;
 
     /* Glassmorphic Surfaces */
-    --glass-light: rgba(255, 255, 255, 0.05);
-    --glass-medium: rgba(255, 255, 255, 0.08);
+    --glass-light: rgba(20, 20, 20, 0.6); /* Was rgba(255, 255, 255, 0.05) */
+    --glass-medium: rgba(30, 30, 30, 0.7); /* Was rgba(255, 255, 255, 0.08) */
     --glass-strong: rgba(255, 255, 255, 0.12);
     --glass-border: rgba(255, 255, 255, 0.1);
 
@@ -168,26 +168,9 @@ body::before {
     pointer-events: none;
 }
 
-/* Neon Glow Effect */
+/* Neon Glow Effect - DISABLED */
 .neon-glow {
     position: relative;
-}
-
-.neon-glow::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    background: linear-gradient(45deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
-    border-radius: inherit;
-    opacity: 0;
-    filter: blur(8px);
-    transition: opacity 0.4s;
-    z-index: -1;
-}
-
-@keyframes neonPulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 0.8; }
 }
 
 /* Holographic Text Effect */
@@ -208,10 +191,12 @@ body::before {
 
 /* Search Bar - Futuristic */
 .search-bar {
-    background: var(--glass-light);
+    
+    /*
     backdrop-filter: var(--blur-medium);
+    background: var(--glass-light);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-full);*/
     padding: 12px 20px;
     display: flex;
     align-items: center;
@@ -236,14 +221,7 @@ body::before {
     transition: opacity 0.4s;
 }
 
-.search-bar:focus-within::before {
-    opacity: 1;
-}
 
-.search-bar:focus-within {
-    background: var(--glass-medium);
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
-}
 
 .search-bar input {
     border: none;
@@ -264,64 +242,51 @@ body::before {
     font-size: 22px;
 }
 
-/* Category Pills - Floating Pills */
-.category-card {
+/* Category Dropdown */
+.category-dropdown {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     background: var(--glass-light);
     backdrop-filter: var(--blur-medium);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-full);
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    border-radius: var(--radius-lg);
+    padding: 16px 48px 16px 20px;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
     transition: var(--transition-smooth);
-    white-space: nowrap;
-    position: relative;
-    overflow: hidden;
-}
-
-.category-card::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 240, 255, 0.2) 0%, transparent 70%);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-.category-card.active {
-    background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
-    border-color: var(--neon-cyan);
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
-}
-
-.category-icon .material-icons-round {
-    font-size: 20px;
-    color: var(--text-secondary);
-    transition: var(--transition-smooth);
-}
-
-.category-card.active .category-icon .material-icons-round {
-    color: var(--neon-cyan);
-    filter: drop-shadow(0 0 8px var(--neon-cyan));
-}
-
-.category-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
     position: relative;
     z-index: 1;
-    transition: var(--transition-smooth);
 }
 
-.category-card.active .category-label {
+.category-dropdown:focus {
+    outline: none;
+    background: var(--glass-medium);
+    border-color: var(--neon-cyan);
+}
+
+.category-dropdown:active {
+    transform: scale(0.98);
+}
+
+.category-dropdown option {
+    background: var(--void-black);
     color: var(--text-primary);
+    padding: 12px;
+    font-weight: 600;
+}
+
+.category-dropdown-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 2;
+    font-size: 24px;
 }
 
 /* Post Card - Neural Design */
@@ -374,7 +339,6 @@ body::before {
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--glass-border);
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
     transition: var(--transition-smooth);
 }
 
@@ -448,7 +412,6 @@ body::before {
 
 .action-btn.liked .material-icons-round {
     animation: heartbeat 0.3s ease-in-out;
-    filter: drop-shadow(0 0 10px var(--neon-pink));
 }
 
 @keyframes heartbeat {
@@ -458,6 +421,7 @@ body::before {
 
 .post-content {
     padding: 24px;
+    padding-bottom: 88px; /* Space for WhatsApp button */
     position: relative;
     z-index: 1;
 }
@@ -505,7 +469,6 @@ body::before {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.3));
 }
 
 /* Avatar Story Row */
@@ -563,7 +526,6 @@ body::before {
 .fab-pulse {
     background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--electric-blue) 100%);
     border: none;
-    box-shadow: 0 8px 32px rgba(0, 240, 255, 0.4);
     transition: var(--transition-bounce);
     position: relative;
     overflow: hidden;
@@ -630,10 +592,6 @@ body::before {
     color: var(--neon-cyan);
 }
 
-.nav-btn.text-brand-primary .material-icons-round {
-    filter: drop-shadow(0 0 10px var(--neon-cyan));
-}
-
 /* Modal Backgrounds */
 .modal-background {
     backdrop-filter: var(--blur-heavy);
@@ -651,7 +609,6 @@ body::before {
     font-size: 16px;
     cursor: pointer;
     transition: var(--transition-smooth);
-    box-shadow: 0 8px 24px rgba(0, 240, 255, 0.3);
     position: relative;
     overflow: hidden;
 }
@@ -671,12 +628,13 @@ body::before {
 
 /* Input Fields */
 input, textarea, select {
-    background: var(--glass-light);
+    background: rgba(0, 0, 0, 0.3); 
+    color: var(--text-primary);
     backdrop-filter: var(--blur-subtle);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     padding: 14px 18px;
-    color: var(--text-primary);
+    
     font-size: 15px;
     transition: var(--transition-smooth);
 }
@@ -685,11 +643,10 @@ input:focus, textarea:focus, select:focus {
     outline: none;
     background: var(--glass-medium);
     border-color: var(--neon-cyan);
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
 }
 
 input::placeholder, textarea::placeholder {
-    color: var(--text-tertiary);
+    color: #bbbbbb;
 }
 
 /* Safe Area */
@@ -920,12 +877,14 @@ input::placeholder, textarea::placeholder {
 }
 
 /* Mobile - Very Small Screens (420px and below) */
-@media (max-width: 420px) {
+@media (max-width: 375px) {
     /* Headers - Override Tailwind */
     header.glass-card,
     header {
-        padding: 10px 12px !important;
+        
         gap: 8px !important;
+        flex-wrap: wrap; /* Allow wrapping if absolutely necessary */
+        padding: 8px !important;
     }
 
     header .w-11 {
@@ -934,9 +893,10 @@ input::placeholder, textarea::placeholder {
     }
 
     .search-bar {
-        padding: 8px 12px !important;
-        gap: 6px !important;
-        max-width: 100% !important;
+       min-width: 0; /* Allows flex item to shrink below content size */
+        width: 100%;
+        margin-top: 8px; /* If it wraps, give it space */
+        order: 3;
     }
 
     .search-bar input {
@@ -1062,6 +1022,23 @@ input::placeholder, textarea::placeholder {
 
     .post-content {
         padding: 14px !important;
+        padding-bottom: 80px !important; /* Space for WhatsApp button on mobile */
+    }
+
+    /* WhatsApp button responsive */
+    .post-card-new .absolute.bottom-5 {
+        bottom: 12px !important;
+        right: 12px !important;
+    }
+
+    .post-card-new .absolute.bottom-5 button {
+        font-size: 13px !important;
+        padding: 10px 16px !important;
+    }
+
+    .post-card-new .absolute.bottom-5 button svg {
+        width: 18px !important;
+        height: 18px !important;
     }
 
     .post-actions {
@@ -1157,5 +1134,217 @@ input::placeholder, textarea::placeholder {
     .nav-btn {
         display: flex !important;
         flex-direction: column !important;
+    }
+}
+
+/* ==================================================
+   PRODUCTION POLISH - FINAL FIXES
+   ================================================== */
+
+/* Ensure all inputs have proper styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="file"],
+textarea,
+select {
+    background: rgba(0, 0, 0, 0.4) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 14px 18px !important;
+}
+
+input[type="file"] {
+    padding: 10px 14px !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #bbbbbb !important;
+    opacity: 1;
+}
+
+/* Focus states */
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-color: var(--neon-cyan) !important;
+}
+
+/* Remove any lingering white backgrounds */
+.bg-white {
+    background: transparent !important;
+}
+
+.bg-gray-50,
+.bg-gray-100 {
+    background: var(--glass-light) !important;
+}
+
+.text-gray-400,
+.text-gray-500 {
+    color: var(--text-secondary) !important;
+}
+
+.text-gray-600,
+.text-gray-700 {
+    color: var(--text-secondary) !important;
+}
+
+.text-gray-800,
+.text-gray-900 {
+    color: var(--text-primary) !important;
+}
+
+/* Border colors */
+.border-gray-100,
+.border-gray-200 {
+    border-color: var(--glass-border) !important;
+}
+
+/* Login screen specific fixes */
+#screen-login .glass-card {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+#screen-login input {
+    background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Modal fixes */
+.modal-background .glass-card {
+    background: var(--glass-light) !important;
+}
+
+/* Ensure proper text contrast everywhere */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+}
+
+p {
+    color: var(--text-secondary);
+}
+
+/* Profile section fixes */
+#screen-profile {
+    background: transparent !important;
+}
+
+/* Button text readability */
+button {
+    font-weight: 600;
+}
+
+.btn-primary {
+    color: var(--void-black) !important;
+}
+
+/* Make sure all cards use glass style */
+.post-card-new,
+.glass-card,
+.neural-container {
+    background: var(--glass-light) !important;
+    backdrop-filter: var(--blur-medium) !important;
+}
+
+/* Active states for mobile touch */
+button:active {
+    transform: scale(0.95);
+    opacity: 0.9;
+}
+
+.glass-card:active {
+    transform: scale(0.98);
+}
+
+/* Smooth transitions everywhere */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Price text should be more visible */
+.price {
+    color: var(--neon-cyan) !important;
+}
+
+/* Category badge improvements */
+.post-category-badge {
+    background: var(--glass-medium) !important;
+    color: var(--neon-cyan) !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+}
+
+/* Action buttons color fix */
+.action-btn {
+    color: var(--text-secondary) !important;
+}
+
+.action-btn.liked {
+    color: var(--neon-pink) !important;
+}
+
+/* Search bar improvements */
+
+
+.search-bar input {
+    background: transparent !important;
+}
+
+/* Admin panel text fixes */
+#screen-admin {
+    background: transparent !important;
+}
+
+/* Notification badge */
+#notif-badge {
+    background: var(--neon-pink) !important;
+}
+
+/* Ensure z-index hierarchy */
+.modal-background {
+    z-index: 100;
+}
+
+header {
+    z-index: 50;
+}
+
+#bottom-nav {
+    z-index: 40;
+}
+
+/* Touch feedback for interactive elements */
+a:active,
+button:active,
+.category-card:active {
+    opacity: 0.7;
+}
+
+/* Prevent text selection on UI elements */
+button,
+.nav-btn,
+.category-card,
+.action-btn {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Scrollbar improvements for mobile */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Fix for iOS safe areas */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #bottom-nav {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
     }
 }
