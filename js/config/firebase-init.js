@@ -6,6 +6,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { getMessaging } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 import { FIREBASE_CONFIG } from '../../config.js';
 
 // --- FIREBASE CONFIGURATION ---
@@ -31,6 +32,7 @@ const app = initializeApp(activeConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const messaging = getMessaging(app);
 
 // Helper functions for collection paths
 function getCollectionRef(colName) {
@@ -54,6 +56,7 @@ export {
     auth,
     db,
     storage,
+    messaging,
     appId,
     shouldUseCustomToken,
     getCollectionRef,

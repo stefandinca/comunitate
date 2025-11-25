@@ -268,14 +268,7 @@ function toggleModal(modalId, show) {
     }
 }
 
-// --- SERVICE WORKER CLEANUP ---
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
-            registration.unregister();
-        });
-    });
-}
+
 
 // --- AUTHENTICATION ---
 const initAuth = async () => {
