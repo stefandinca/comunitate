@@ -152,8 +152,8 @@
                 <p class="text-gray-600">Descoperă noutățile din comunitatea ta</p>
             </div>
 
-            <!-- Category Pills -->
-            <div class="mb-6">
+            <!-- Category Pills for larger screens -->
+            <div class="mb-6 hidden sm:block">
                 <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
                     <button onclick="filterPosts('all')" data-category="all" class="category-pill flex-shrink-0 px-4 py-2.5 rounded-full font-bold text-sm transition-all bg-brand-primary text-white">
                         Toate
@@ -166,13 +166,13 @@
                         <span class="material-icons-round" style="font-size: 18px;">event</span>
                         Evenimente
                     </button>
-                    <button onclick="filterPosts('local')" data-category="local" class="category-pill flex-shrink-0 px-4 py-2.5 rounded-full font-bold text-sm transition-all bg-white border border-gray-200 text-gray-700 hover:border-gray-300 flex items-center gap-1.5">
+                    <button onclick="filterPosts('interes-local')" data-category="local" class="category-pill flex-shrink-0 px-4 py-2.5 rounded-full font-bold text-sm transition-all bg-white border border-gray-200 text-gray-700 hover:border-gray-300 flex items-center gap-1.5">
                         <span class="material-icons-round" style="font-size: 18px;">location_on</span>
                         Interes Local
                     </button>
-                    <button onclick="filterPosts('business')" data-category="business" class="category-pill flex-shrink-0 px-4 py-2.5 rounded-full font-bold text-sm transition-all bg-white border border-gray-200 text-gray-700 hover:border-gray-300 flex items-center gap-1.5">
+                    <button onclick="filterPosts('afaceri-locale')" data-category="business" class="category-pill flex-shrink-0 px-4 py-2.5 rounded-full font-bold text-sm transition-all bg-white border border-gray-200 text-gray-700 hover:border-gray-300 flex items-center gap-1.5">
                         <span class="material-icons-round" style="font-size: 18px;">business</span>
-                        Afaceri
+                        Afaceri Locale
                     </button>
                     <button onclick="filterPosts('recommendation')" data-category="recommendation" class="category-pill flex-shrink-0 px-4 py-2.5 rounded-full font-bold text-sm transition-all bg-white border border-gray-200 text-gray-700 hover:border-gray-300 flex items-center gap-1.5">
                         <span class="material-icons-round" style="font-size: 18px;">star</span>
@@ -183,6 +183,19 @@
                         Împrumut
                     </button>
                 </div>
+            </div>
+
+            <!-- Category Dropdown for mobile -->
+            <div class="mb-6 sm:hidden">
+                <select id="post-category-filter-mobile" class="w-full">
+                    <option value="all">Toate</option>
+                    <option value="sale">Bazar</option>
+                    <option value="event">Evenimente</option>
+                    <option value="interes-local">Interes Local</option>
+                    <option value="afaceri-locale">Afaceri Locale</option>
+                    <option value="recommendation">Recomandări</option>
+                    <option value="borrow">Împrumut</option>
+                </select>
             </div>
 
             <div class="mb-6 flex justify-between items-end">
@@ -343,8 +356,8 @@
                         <option value="sale">Bazar</option>
                         <option value="borrow">Cereri împrumut</option>
                         <option value="event">Evenimente</option>
-                        <option value="local">Interes Local</option>
-                        <option value="business">Afaceri locale</option>
+                        <option value="interes-local">Interes Local</option>
+                        <option value="afaceri-locale">Afaceri locale</option>
                         <option value="recommendation">Recomandări</option>
                     </select>
                 </div>
@@ -473,8 +486,8 @@
                         <option value="sale">Bazar</option>
                         <option value="borrow">Cereri imprumut</option>
                         <option value="event">Evenimente</option>
-                        <option value="local">Interes Local</option>
-                        <option value="business">Afaceri locale</option>
+                        <option value="interes-local">Interes Local</option>
+                        <option value="afaceri-locale">Afaceri locale</option>
                         <option value="recommendation">Recomandari</option>
                     </select>
                 </div>
@@ -528,6 +541,17 @@
                          <div id="event-price-input" class="hidden mt-3">
                              <input type="number" id="event-price-val" placeholder="Preț bilet (RON)" class="w-full">
                          </div>
+                    </div>
+                </div>
+
+                <div id="section-business-details" class="hidden space-y-5">
+                    <div>
+                        <label class="text-xs font-bold uppercase mb-2 block text-gray-500">Numele afacerii</label>
+                        <input type="text" id="business-name" class="w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold uppercase mb-2 block text-gray-500">Program de functionare</label>
+                        <input type="text" id="business-hours" class="w-full">
                     </div>
                 </div>
 

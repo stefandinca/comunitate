@@ -322,7 +322,7 @@ body {
 
 .post-content {
     padding: 20px;
-    padding-bottom: 80px;
+    
     position: relative;
     z-index: 1;
 }
@@ -662,7 +662,7 @@ button,
 
     .post-content {
         padding: 16px;
-        padding-bottom: 70px;
+        
     }
 
     /* Mobile search bar - reduce padding */

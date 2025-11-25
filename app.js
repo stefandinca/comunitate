@@ -101,6 +101,13 @@ let currentChatUserId = null;
 function isSuperAdmin() {
     return userProfile && userProfile.role === 'super-admin';
 }
+
+function makeLinksClickable(text) {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 underline">${url}</a>`;
+    });
+}
 let unsubscribePublicProfilePosts = null;
 let editingPostId = null;
 let currentCommentingPostId = null;
@@ -503,14 +510,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const type = e.target.value;
             const priceSection = document.getElementById('section-price');
             const eventDetails = document.getElementById('section-event-details');
+            const businessDetails = document.getElementById('section-business-details');
+
+            priceSection.classList.add('hidden');
+            eventDetails.classList.add('hidden');
+            businessDetails.classList.add('hidden');
 
             if (type === 'event') {
-                priceSection.classList.add('hidden');
                 eventDetails.classList.remove('hidden');
-            } else {
+            } else if (type === 'afaceri-locale') {
+                businessDetails.classList.remove('hidden');
+            } else if (type === 'sale' || type === 'borrow') {
                 priceSection.classList.remove('hidden');
-                eventDetails.classList.add('hidden');
             }
+        });
+    }
+
+    const postCategoryFilterMobile = document.getElementById('post-category-filter-mobile');
+    if(postCategoryFilterMobile) {
+        postCategoryFilterMobile.addEventListener('change', (e) => {
+            const type = e.target.value;
+            filterPosts(type);
         });
     }
 
@@ -1152,6 +1172,11 @@ createForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentUser) return;
 
+    const type = document.getElementById('post-category').value;
+    if ((type === 'interes-local' || type === 'afaceri-locale') && !isSuperAdmin()) {
+        return showToast('Nu ai permisiunea de a posta in aceasta sectiune.', 'error');
+    }
+
     const authorName = userProfile?.name || 'Vecin';
     const authorPhone = document.getElementById('post-phone').value;
     const authorAvatar = userProfile?.avatar || '';
@@ -1180,7 +1205,7 @@ createForm.addEventListener('submit', async (e) => {
             authorAvatar,
             uid: currentUser.uid,
             timestamp: serverTimestamp(),
-            type: document.getElementById('post-category').value,
+            type: type,
             commentCount: 0,
             image: imageUrl,
             imagePath: imagePath
@@ -1204,6 +1229,9 @@ createForm.addEventListener('submit', async (e) => {
             }
             formData.interestedCount = 0;
             formData.interestedUsers = [];
+        } else if (formData.type === 'afaceri-locale') {
+            formData.businessName = document.getElementById('business-name').value;
+            formData.businessHours = document.getElementById('business-hours').value;
         }
 
         await setDoc(newPostRef, formData);
@@ -1655,18 +1683,28 @@ function createPostCard(post) {
     const truncatedDesc = post.description.length > 100
         ? post.description.substring(0, 100) + '...'
         : post.description;
+    const clickableTruncatedDesc = makeLinksClickable(truncatedDesc);
 
     article.innerHTML = `
         <!-- Post Header -->
         <div class="post-header">
-            <div class="post-author" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
-                <img src="${avatarSrc}" alt="${post.authorName}">
-                <div class="post-author-info">
-                    <h4>${post.authorName}</h4>
-                    <p>${date}</p>
+            ${post.type !== 'afaceri-locale' && post.type !== 'interes-local' ? `
+                <div class="post-author" onclick="event.stopPropagation(); viewUserProfile('${post.uid}')">
+                    <img src="${avatarSrc}" alt="${post.authorName}">
+                    <div class="post-author-info">
+                        <h4>${post.authorName}</h4>
+                        <p>${date}</p>
+                    </div>
                 </div>
-            </div>
-            ${post.authorPhone ? `
+            ` : `
+                <div class="post-author">
+                    <div class="post-author-info">
+                        <h4>${post.businessName || post.title}</h4>
+                        <p>${date}</p>
+                    </div>
+                </div>
+            `}
+            ${post.authorPhone && post.type !== 'afaceri-locale' && post.type !== 'interes-local' ? `
                 <button onclick="event.stopPropagation(); contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', '${post.type}')" class="px-4 py-2 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2" style="background: #25D366;">
                     WhatsApp
                 </button>
@@ -1677,7 +1715,7 @@ function createPostCard(post) {
         ${post.image ? `<img src="${post.image}" class="post-image" alt="${post.title}">` : ''}
 
         <!-- Post Content -->
-        <div class="post-content pb-20">
+        <div class="post-content">
             <div class="flex justify-between items-center mb-3">
                 <span class="post-category-badge">
                     ${getCategoryLabel(post.type)}
@@ -1691,7 +1729,13 @@ function createPostCard(post) {
             </div>
 
             <h3 class="mb-3">${post.title}</h3>
-            <p class="text-gray-600 text-sm leading-relaxed">${truncatedDesc}</p>
+            ${post.type === 'afaceri-locale' && post.businessName ? `
+                <div class="business-details mb-3">
+                    <p class="text-sm font-bold text-gray-800">${post.businessName}</p>
+                    ${post.businessHours ? `<p class="text-xs text-gray-500">${post.businessHours}</p>` : ''}
+                </div>
+            ` : ''}
+            <p class="text-gray-600 text-sm leading-relaxed">${clickableTruncatedDesc}</p>
         </div>
 
         <!-- Post Actions -->
@@ -1753,7 +1797,7 @@ function createEventCard(post) {
         ${post.image ? `<img src="${post.image}" class="post-image" alt="${post.title}">` : ''}
 
         <!-- Post Content -->
-        <div class="post-content pb-20">
+        <div class="post-content">
             <div class="flex justify-between items-center mb-3">
                 <span class="post-category-badge">
                     Evenimente
@@ -1824,6 +1868,10 @@ window.openPostDetails = async (postId) => {
 
         if (post.type === 'event') {
             renderEventDetails(post, content);
+        } else if (post.type === 'afaceri-locale') {
+            renderBusinessDetails(post, content);
+        } else if (post.type === 'interes-local') {
+            renderInteresLocalDetails(post, content);
         } else {
             renderSaleDetails(post, content);
         }
@@ -1857,16 +1905,10 @@ function renderSaleDetails(post, container) {
 
             ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
 
-            <!-- Price -->
-            <div class="bg-brand-primary bg-opacity-10 p-4 rounded-2xl border-2 border-brand-primary">
-                <p class="text-xs font-bold text-gray-500 uppercase mb-1">Preț</p>
-                <p class="text-3xl font-extrabold text-brand-primary">${post.price} RON</p>
-            </div>
-
             <!-- Description -->
             <div>
                 <p class="text-xs font-bold text-gray-500 uppercase mb-2">Descriere</p>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.description}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${makeLinksClickable(post.description)}</p>
             </div>
 
             <!-- Contact Button -->
@@ -1949,16 +1991,10 @@ function renderEventDetails(post, container) {
                 </div>
             </div>
 
-            <!-- Price -->
-            <div class="bg-brand-primary/20 p-4 rounded-2xl border-2 border-brand-primary">
-                <p class="text-xs font-bold text-brand-primary uppercase mb-1">Preț Participare</p>
-                <p class="text-2xl font-extrabold text-brand-primary">${priceDisplay}</p>
-            </div>
-
             <!-- Description -->
             <div>
                 <p class="text-xs font-bold text-gray-500 uppercase mb-2">Descriere</p>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.description}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${makeLinksClickable(post.description)}</p>
             </div>
 
             <!-- Interest Button -->
@@ -1972,6 +2008,62 @@ function renderEventDetails(post, container) {
                     ${btnText}
                 </button>
             </div>
+        </div>
+    `;
+}
+
+function renderInteresLocalDetails(post, container) {
+    const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
+
+            <!-- Description -->
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase mb-2">Descriere</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${makeLinksClickable(post.description)}</p>
+            </div>
+        </div>
+    `;
+}
+
+function renderBusinessDetails(post, container) {
+    const date = post.timestamp ? timeAgo(new Date(post.timestamp.seconds * 1000)) : '';
+
+    let cleanPhone = (post.authorPhone || '').replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+    if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
+    const waHref = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Salut, pt anunțul: ' + post.title)}` : 'javascript:void(0)';
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
+            <!-- Business Name and Hours -->
+            <div class="bg-gray-100 p-4 rounded-2xl border-2 border-gray-200">
+                <p class="text-xs font-bold text-gray-500 uppercase mb-1">Nume Afacere</p>
+                <p class="text-xl font-extrabold text-gray-800">${post.businessName || 'N/A'}</p>
+                ${post.businessHours ? `
+                    <p class="text-xs font-bold text-gray-500 uppercase mt-3 mb-1">Program</p>
+                    <p class="text-md font-bold text-gray-700">${post.businessHours}</p>
+                ` : ''}
+            </div>
+
+            <!-- Description -->
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase mb-2">Descriere</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${makeLinksClickable(post.description)}</p>
+            </div>
+
+            <!-- Contact Button -->
+            ${cleanPhone ? `
+            <a href="${waHref}" target="_blank" class="w-full text-white py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all" style="background: #25D366;">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                WhatsApp
+            </a>
+            ` : ''}
         </div>
     `;
 }
@@ -2538,8 +2630,8 @@ function getCategoryLabel(category) {
         'sale': 'Bazar',
         'borrow': 'Împrumut',
         'event': 'Eveniment',
-        'local': 'Local',
-        'business': 'Afacere',
+        'interes-local': 'Interes Local',
+        'afaceri-locale': 'Afacere Locală',
         'recommendation': 'Recomandare'
     };
     return labels[category] || category;
@@ -2692,17 +2784,17 @@ function createMessageBubble(message) {
     const time = message.timestamp ? timeAgo(message.timestamp.toDate()) : '';
 
     if (isMyMessage) {
-        // My messages - cyan gradient with black text
+        // My messages - brand primary with white text
         bubble.innerHTML = `
-            <div class="max-w-[70%] p-3 rounded-2xl" style="background: linear-gradient(135deg, var(--neon-cyan), var(--electric-blue));">
-                <p class="text-sm break-words" style="color: var(--void-black);">${message.text}</p>
-                <span class="text-xs block mt-1 opacity-70" style="color: var(--void-black);">${time}</span>
+            <div class="max-w-[70%] p-3 rounded-2xl" style="background: var(--primary); color: white;">
+                <p class="text-sm break-words">${message.text}</p>
+                <span class="text-xs block mt-1 opacity-70">${time}</span>
             </div>
         `;
     } else {
         // Received messages - light background with dark text
         bubble.innerHTML = `
-            <div class="max-w-[70%] p-3 rounded-2xl" style="background: var(--glass-strong); border: 1px solid var(--glass-border); backdrop-filter: var(--blur-medium);">
+            <div class="max-w-[70%] p-3 rounded-2xl" style="background: var(--background-light); border: 1px solid var(--border-color);">
                 <p class="text-sm break-words" style="color: var(--text-primary);">${message.text}</p>
                 <span class="text-xs block mt-1 opacity-70" style="color: var(--text-secondary);">${time}</span>
             </div>
