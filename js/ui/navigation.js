@@ -11,7 +11,9 @@ const screens = {
     feed: null,
     profile: null,
     admin: null,
-    messages: null
+    messages: null,
+    businesses: null,
+    businessDetails: null
 };
 
 // Callbacks for loading screen data
@@ -35,6 +37,8 @@ export function initScreens() {
     screens.profile = document.getElementById('screen-profile');
     screens.admin = document.getElementById('screen-admin');
     screens.messages = document.getElementById('screen-messages');
+    screens.businesses = document.getElementById('screen-businesses');
+    screens.businessDetails = document.getElementById('screen-business-details');
 }
 
 /**
@@ -139,6 +143,24 @@ export function showScreen(screenName) {
             navAdmin.classList.add('opacity-100');
         }
         if (callbacks.loadAdminDashboard) callbacks.loadAdminDashboard();
+    } else if (screenName === 'businesses') {
+        if (screens.businesses) {
+            screens.businesses.classList.remove('hidden');
+            screens.businesses.classList.add('flex');
+        }
+        if (bottomNav) bottomNav.classList.remove('hidden');
+        const navBusinesses = document.getElementById('nav-businesses');
+        if (navBusinesses) {
+            navBusinesses.classList.remove('opacity-60');
+            navBusinesses.classList.add('opacity-100');
+        }
+        if (callbacks.loadBusinesses) callbacks.loadBusinesses();
+    } else if (screenName === 'business-details') {
+        if (screens.businessDetails) {
+            screens.businessDetails.classList.remove('hidden');
+            screens.businessDetails.classList.add('flex');
+        }
+        if (bottomNav) bottomNav.classList.remove('hidden');
     }
 }
 

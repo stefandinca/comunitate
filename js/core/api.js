@@ -9,6 +9,7 @@ import {
     getDocs,
     updateDoc,
     deleteDoc,
+    doc,
     query,
     where,
     orderBy,
@@ -18,9 +19,10 @@ import {
     serverTimestamp,
     arrayUnion,
     arrayRemove,
-    increment
+    increment,
+    runTransaction
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getCollectionRef, getDocPath } from '../config/firebase-init.js';
+import { db, getCollectionRef, getDocPath } from '../config/firebase-init.js';
 
 // Re-export Firestore utilities for convenience
 export {
@@ -32,7 +34,10 @@ export {
     serverTimestamp,
     arrayUnion,
     arrayRemove,
-    increment
+    increment,
+    runTransaction,
+    db,
+    doc
 };
 
 /**

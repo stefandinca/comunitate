@@ -23,6 +23,7 @@ let currentCommentingPostId = null;
 let currentViewingPostId = null;
 let currentConversationId = null;
 let currentChatUserId = null;
+let currentBusinessId = null;
 
 // Pending files (for uploads)
 let pendingAvatarFile = null;
@@ -186,6 +187,14 @@ export function getCurrentChatUserId() {
 
 export function setCurrentChatUserId(id) {
     currentChatUserId = id;
+}
+
+export function getCurrentBusinessId() {
+    return currentBusinessId;
+}
+
+export function setCurrentBusinessId(id) {
+    currentBusinessId = id;
 }
 
 // ==================== PENDING FILES ====================

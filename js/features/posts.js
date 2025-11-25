@@ -50,6 +50,7 @@ import {
 import { showToast } from '../ui/toast.js';
 import { timeAgo, makeLinksClickable, getCategoryLabel } from '../utils/helpers.js';
 import { uploadImage } from '../utils/images.js';
+import { createBusiness } from './businesses.js';
 
 // ==================== FILTER & LOAD POSTS ====================
 
@@ -956,4 +957,34 @@ export function toggleEventPrice() {
     const priceInput = document.getElementById('event-price-input');
     if (isPaid) priceInput.classList.remove('hidden');
     else priceInput.classList.add('hidden');
+}
+
+
+export function initPostsModule() {
+    const categorySelect = document.getElementById('post-category');
+    if(categorySelect) {
+        categorySelect.addEventListener('change', (e) => {
+            const category = e.target.value;
+            const priceSection = document.getElementById('section-price');
+            const eventDetailsSection = document.getElementById('section-event-details');
+            const businessDetailsSection = document.getElementById('section-business-details');
+
+            priceSection.classList.toggle('hidden', category !== 'sale');
+            eventDetailsSection.classList.toggle('hidden', category !== 'event');
+            businessDetailsSection.classList.toggle('hidden', category !== 'afaceri-locale');
+        });
+    }
+
+    const createForm = document.getElementById('create-form');
+    if (createForm) {
+        createForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const category = document.getElementById('post-category').value;
+            if (category === 'afaceri-locale') {
+                createBusiness();
+                return;
+            }
+            // Handle regular post creation
+        });
+    }
 }

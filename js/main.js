@@ -21,7 +21,8 @@ import {
     toggleEventPrice,
     handleSearch,
     clearSearch,
-    loadSearchHistory
+    loadSearchHistory,
+    initPostsModule
 } from './features/posts.js';
 
 // Profile module
@@ -68,6 +69,13 @@ import {
     requestNotificationPermission
 } from './features/notifications.js';
 
+// Businesses module
+import {
+    loadBusinesses,
+    viewBusinessDetails,
+    initBusinessDetailsModule
+} from './features/businesses.js';
+
 // ==================== WINDOW EXPOSURES ====================
 // Expose functions that are called from HTML onclick handlers
 
@@ -95,6 +103,9 @@ window.toggleEventPrice = toggleEventPrice;
 // Profile
 window.switchProfileTab = switchProfileTab;
 window.viewUserProfile = viewUserProfile;
+
+// Businesses
+window.viewBusinessDetails = viewBusinessDetails;
 
 // Messaging
 window.openConversation = openConversation;
@@ -136,7 +147,8 @@ async function initializeApp() {
             loadConversations,
             loadAdminDashboard,
             clearCreateImage,
-            clearEditImage
+            clearEditImage,
+            loadBusinesses
         });
 
 
@@ -145,6 +157,8 @@ async function initializeApp() {
         initMessagingModule();
         initPostDetailsModule();
         initPushNotifications();
+        initBusinessDetailsModule();
+        initPostsModule();
 
         // Register service worker
         if ('serviceWorker' in navigator) {

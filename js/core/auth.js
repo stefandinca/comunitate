@@ -75,6 +75,12 @@ export function setupAuthListener(onLogin, onLogout) {
                         adminNavBtn.classList.remove('flex');
                     }
                 }
+
+                // Show business category for super-admins
+                const businessCategory = document.getElementById('category-business');
+                if (businessCategory && isSuperAdmin()) {
+                    businessCategory.classList.remove('hidden');
+                }
             }
 
             if (onLogin) onLogin(user);

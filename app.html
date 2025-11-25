@@ -79,23 +79,23 @@
         <form id="login-form" class="w-full max-w-md space-y-5 glass-card p-8">
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Email</label>
-                <input type="email" id="input-email" required placeholder="nume@email.com">
+                <input type="email" id="input-email" required placeholder="nume@email.com" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
             </div>
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Parolă</label>
-                <input type="password" id="input-password" required placeholder="••••••••">
+                <input type="password" id="input-password" required placeholder="••••••••" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
             </div>
 
             <div id="register-fields" class="space-y-5 hidden">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Numele Tău</label>
-                    <input type="text" id="input-name" placeholder="ex. Maria Popescu">
+                    <input type="text" id="input-name" placeholder="ex. Maria Popescu" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Telefon (Pt. WhatsApp)</label>
                     <div class="relative">
-                        <span class="absolute left-4 top-3.5 font-bold text-gray-500">+40</span>
-                        <input type="tel" id="input-phone" placeholder="7xx xxx xxx" class="pl-14">
+                        
+                        <input type="tel" id="input-phone" placeholder="7xx xxx xxx" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20">
                     </div>
                 </div>
             </div>
@@ -121,6 +121,9 @@
 
             <p id="auth-toggle-text" class="text-sm text-center mt-6 text-gray-600">Nu ai cont? <span class="font-bold cursor-pointer hover:underline text-brand-primary" onclick="toggleAuthMode()">Înregistrează-te</span></p>
         </form>
+        <p class="text-xs text-gray-500 mt-6 leading-relaxed">
+                    Înregistrându-te, ești de acord cu termenii și condițiile platformei Corbeanca Community.
+                </p>
     </section>
 
     <!-- ================= VIEW: FEED ================= -->
@@ -211,6 +214,79 @@
 
             <div id="feed-container" class="flex flex-col gap-5">
                 <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl" style="color: var(--neon-cyan);">refresh</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= VIEW: BUSINESSES ================= -->
+    <section id="screen-businesses" class="hidden flex-col h-full relative">
+        <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b border-gray-200 m-0">
+            <div class="flex-1">
+                <h2 class="text-2xl font-extrabold text-gray-900">Afaceri Locale</h2>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Director de afaceri</p>
+            </div>
+            <div class="flex-1">
+                <input type="text" id="business-search-input" placeholder="Caută afaceri..." class="w-full">
+            </div>
+            <div>
+                <select id="business-category-filter" class="w-full">
+                    <option value="all">Toate Categoriile</option>
+                    <option value="Restaurant">Restaurant</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Services">Servicii</option>
+                </select>
+            </div>
+            <span class="material-icons-round text-3xl text-brand-primary">store</span>
+        </header>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
+            <div id="businesses-container" class="p-5 space-y-3">
+                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl text-brand-primary">refresh</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= VIEW: BUSINESS DETAILS ================= -->
+    <section id="screen-business-details" class="hidden flex-col h-full relative">
+        <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b border-gray-200 m-0">
+            <button onclick="showScreen('businesses')" class="p-2.5 bg-gray-100 rounded-full transition-all hover:bg-gray-200">
+                <span class="material-icons-round text-gray-700">arrow_back</span>
+            </button>
+            <div class="flex-1">
+                <h2 id="business-details-name" class="text-2xl font-extrabold text-gray-900">Detalii Afacere</h2>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar pb-28">
+            <div id="business-details-content" class="p-5">
+                <!-- Business details will be rendered here -->
+            </div>
+            <div class="p-5 border-t border-gray-200">
+                <h3 class="text-xl font-bold mb-4">Adaugă o recenzie</h3>
+                <form id="review-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Nota</label>
+                        <div class="flex items-center gap-1">
+                            <span class="material-icons-round text-gray-300 cursor-pointer star" data-value="1">star_outline</span>
+                            <span class="material-icons-round text-gray-300 cursor-pointer star" data-value="2">star_outline</span>
+                            <span class="material-icons-round text-gray-300 cursor-pointer star" data-value="3">star_outline</span>
+                            <span class="material-icons-round text-gray-300 cursor-pointer star" data-value="4">star_outline</span>
+                            <span class="material-icons-round text-gray-300 cursor-pointer star" data-value="5">star_outline</span>
+                        </div>
+                        <input type="hidden" id="review-rating" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">Recenzie</label>
+                        <textarea id="review-text" rows="3" class="w-full" required></textarea>
+                    </div>
+                    <button type="submit" class="w-full btn-primary">Trimite recenzia</button>
+                </form>
+            </div>
+            <div class="p-5 border-t border-gray-200">
+                <h3 class="text-xl font-bold mb-4">Recenzii</h3>
+                <div id="business-reviews-container" class="space-y-4">
+                    <!-- Reviews will be rendered here -->
+                </div>
             </div>
         </div>
     </section>
@@ -499,7 +575,7 @@
                         <option value="borrow">Cereri imprumut</option>
                         <option value="event">Evenimente</option>
                         <option value="interes-local">Interes Local</option>
-                        <option value="afaceri-locale">Afaceri locale</option>
+                        <option value="afaceri-locale" id="category-business" class="hidden">Afaceri locale</option>
                         <option value="recommendation">Recomandari</option>
                     </select>
                 </div>
@@ -560,6 +636,18 @@
                     <div>
                         <label class="text-xs font-bold uppercase mb-2 block text-gray-500">Numele afacerii</label>
                         <input type="text" id="business-name" class="w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold uppercase mb-2 block text-gray-500">Categorie</label>
+                        <input type="text" id="business-category" class="w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold uppercase mb-2 block text-gray-500">Adresă</label>
+                        <input type="text" id="business-address" class="w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold uppercase mb-2 block text-gray-500">Website</label>
+                        <input type="url" id="business-website" class="w-full">
                     </div>
                     <div>
                         <label class="text-xs font-bold uppercase mb-2 block text-gray-500">Program de functionare</label>
@@ -775,6 +863,12 @@
         <button onclick="showScreen('feed')" id="nav-home" class="nav-btn flex flex-col items-center transition-all gap-1.5 relative text-brand-primary">
             <span class="material-icons-round text-2xl">home</span>
             <span class="text-[9px] font-bold uppercase tracking-wide">Acasa</span>
+        </button>
+
+        <!-- Businesses -->
+        <button onclick="showScreen('businesses')" id="nav-businesses" class="nav-btn flex flex-col items-center transition-all gap-1.5 relative text-gray-500">
+            <span class="material-icons-round text-2xl">store</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide">Afaceri</span>
         </button>
 
         <!-- Messages -->
