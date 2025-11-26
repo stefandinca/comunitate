@@ -7,7 +7,9 @@
       "Bash(find:*)",
       "Bash(for file in js/features/*.js)",
       "Bash(do sed -i 's/firebasejs\\/10\\.8\\.0/firebasejs\\/11.6.1/g' \"$file\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase projects:list:*)"
     ],
     "deny": [],
     "ask": []

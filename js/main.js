@@ -148,6 +148,14 @@ async function initializeApp() {
             clearSearchBtn.addEventListener('click', clearSearch);
         }
 
+        // Setup mobile category filter dropdown
+        const postCategoryFilterMobile = document.getElementById('post-category-filter-mobile');
+        if (postCategoryFilterMobile) {
+            postCategoryFilterMobile.addEventListener('change', (e) => {
+                filterPosts(e.target.value);
+            });
+        }
+
         // Initialize authentication (custom token if needed)
         await initAuth();
 

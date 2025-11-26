@@ -60,7 +60,27 @@ import { uploadImage } from '../utils/images.js';
 export function filterPosts(filterType) {
     setActiveFilter(filterType);
 
-    // Update category card UI
+    // Update category pills UI (desktop)
+    document.querySelectorAll('.category-pill').forEach(pill => {
+        const pillCategory = pill.getAttribute('data-category');
+        if (pillCategory === filterType || (filterType === 'all' && pillCategory === 'all')) {
+            // Active state
+            pill.classList.remove('bg-white', 'border', 'border-gray-200', 'text-gray-700');
+            pill.classList.add('bg-brand-primary', 'text-white');
+        } else {
+            // Inactive state
+            pill.classList.remove('bg-brand-primary', 'text-white');
+            pill.classList.add('bg-white', 'border', 'border-gray-200', 'text-gray-700');
+        }
+    });
+
+    // Update mobile dropdown
+    const mobileDropdown = document.getElementById('post-category-filter-mobile');
+    if (mobileDropdown) {
+        mobileDropdown.value = filterType;
+    }
+
+    // Update category card UI (if any)
     document.querySelectorAll('.category-card').forEach(card => {
         const cardFilter = card.getAttribute('data-filter');
         if (cardFilter === filterType) {
