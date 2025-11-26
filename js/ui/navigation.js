@@ -11,7 +11,8 @@ const screens = {
     feed: null,
     profile: null,
     admin: null,
-    messages: null
+    messages: null,
+    businesses: null
 };
 
 // Callbacks for loading screen data
@@ -22,6 +23,7 @@ let callbacks = {
     switchProfileTab: null,
     loadConversations: null,
     loadAdminDashboard: null,
+    loadBusinesses: null,
     clearCreateImage: null,
     clearEditImage: null
 };
@@ -35,6 +37,7 @@ export function initScreens() {
     screens.profile = document.getElementById('screen-profile');
     screens.admin = document.getElementById('screen-admin');
     screens.messages = document.getElementById('screen-messages');
+    screens.businesses = document.getElementById('screen-businesses');
 }
 
 /**
@@ -122,6 +125,18 @@ export function showScreen(screenName) {
             navMessages.classList.add('opacity-100');
         }
         if (callbacks.loadConversations) callbacks.loadConversations();
+    } else if (screenName === 'businesses') {
+        if (screens.businesses) {
+            screens.businesses.classList.remove('hidden');
+            screens.businesses.classList.add('flex');
+        }
+        if (bottomNav) bottomNav.classList.remove('hidden');
+        const navBusinesses = document.getElementById('nav-businesses');
+        if (navBusinesses) {
+            navBusinesses.classList.remove('opacity-60');
+            navBusinesses.classList.add('opacity-100');
+        }
+        if (callbacks.loadBusinesses) callbacks.loadBusinesses();
     } else if (screenName === 'admin') {
         if (!isSuperAdmin()) {
             showToast('Acces interzis!', 'error');
@@ -163,6 +178,21 @@ export function toggleModal(modalId, show) {
                 phoneInput.value = userProfile.phone;
             }
             if (callbacks.clearCreateImage) callbacks.clearCreateImage();
+
+            // Hide admin-only post categories for non-super-admins
+            const postCategory = document.getElementById('post-category');
+            if (postCategory) {
+                const adminOnlyOptions = postCategory.querySelectorAll('[data-admin-only="true"]');
+                if (!isSuperAdmin()) {
+                    adminOnlyOptions.forEach(option => {
+                        option.style.display = 'none';
+                    });
+                } else {
+                    adminOnlyOptions.forEach(option => {
+                        option.style.display = '';
+                    });
+                }
+            }
         }
     } else {
         el.classList.add('hidden');

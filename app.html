@@ -302,6 +302,51 @@
         </div>
     </section>
 
+    <!-- ================= VIEW: BUSINESSES ================= -->
+    <section id="screen-businesses" class="hidden flex-col h-full relative">
+        <header class="glass-card px-5 py-4 flex items-center gap-4 z-20 sticky top-0 border-0 rounded-none border-b border-gray-200 m-0">
+            <div class="flex-1">
+                <h2 class="text-2xl font-extrabold text-gray-900">Afaceri Locale</h2>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Descoperă businessuri din zona ta</p>
+            </div>
+            <span class="material-icons-round text-3xl text-brand-primary">storefront</span>
+        </header>
+
+        <div class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-28 hide-scrollbar">
+            <!-- Filter & Sort Controls -->
+            <div class="mb-6 flex gap-3">
+                <select id="business-rating-filter" class="flex-1 px-4 py-2.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 bg-white">
+                    <option value="all">Toate Rating-urile</option>
+                    <option value="5">5 Stele ⭐</option>
+                    <option value="4">4+ Stele ⭐</option>
+                    <option value="3">3+ Stele ⭐</option>
+                </select>
+                <select id="business-sort" class="flex-1 px-4 py-2.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 bg-white">
+                    <option value="recent">Cele Mai Recente</option>
+                    <option value="rating">Rating Maxim</option>
+                    <option value="popular">Cele Mai Populare</option>
+                </select>
+            </div>
+
+            <div class="mb-6 flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-extrabold mb-1 text-gray-900">Businessuri Locale</h2>
+                    <p class="text-sm text-gray-600">Afaceri verificate din comunitate</p>
+                </div>
+            </div>
+
+            <!-- Businesses List -->
+            <div id="businesses-container" class="space-y-6">
+                <div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl text-brand-primary">refresh</span></div>
+            </div>
+
+            <!-- Load More Button -->
+            <button id="load-more-businesses" onclick="loadMoreBusinesses()" class="hidden w-full btn-secondary mt-6">
+                Încarcă Mai Multe
+            </button>
+        </div>
+    </section>
+
     <!-- ================= VIEW: ADMIN DASHBOARD ================= -->
     <section id="screen-admin" class="hidden flex-col h-full relative">
         <header class="bg-white px-5 py-5 flex items-center gap-4 z-20 sticky top-0 rounded-none border-0 border-b border-gray-200 m-0">
@@ -486,8 +531,8 @@
                         <option value="sale">Bazar</option>
                         <option value="borrow">Cereri imprumut</option>
                         <option value="event">Evenimente</option>
-                        <option value="interes-local">Interes Local</option>
-                        <option value="afaceri-locale">Afaceri locale</option>
+                        <option value="local" data-admin-only="true">Interes Local</option>
+                        <option value="business" data-admin-only="true">Afaceri Locale</option>
                         <option value="recommendation">Recomandari</option>
                     </select>
                 </div>
@@ -763,6 +808,12 @@
         <button onclick="showScreen('feed')" id="nav-home" class="nav-btn flex flex-col items-center transition-all gap-1.5 relative text-brand-primary">
             <span class="material-icons-round text-2xl">home</span>
             <span class="text-[9px] font-bold uppercase tracking-wide">Acasa</span>
+        </button>
+
+        <!-- Businesses -->
+        <button onclick="showScreen('businesses')" id="nav-businesses" class="nav-btn flex flex-col items-center transition-all gap-1.5 text-gray-500">
+            <span class="material-icons-round text-2xl">storefront</span>
+            <span class="text-[9px] font-bold uppercase tracking-wide">Afaceri</span>
         </button>
 
         <!-- Messages -->

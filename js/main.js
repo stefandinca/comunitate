@@ -62,6 +62,12 @@ import {
     adminDeleteComment
 } from './features/admin.js';
 
+// Businesses module
+import {
+    loadBusinesses,
+    loadMoreBusinesses
+} from './features/businesses.js';
+
 // ==================== WINDOW EXPOSURES ====================
 // Expose functions that are called from HTML onclick handlers
 
@@ -126,6 +132,7 @@ async function initializeApp() {
             switchProfileTab,
             loadConversations,
             loadAdminDashboard,
+            loadBusinesses,
             clearCreateImage,
             clearEditImage
         });

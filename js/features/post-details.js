@@ -72,9 +72,9 @@ export async function openPostDetails(postId) {
 
         if (post.type === 'event') {
             renderEventDetails(post, content);
-        } else if (post.type === 'afaceri-locale') {
+        } else if (post.type === 'business') {
             renderBusinessDetails(post, content);
-        } else if (post.type === 'interes-local') {
+        } else if (post.type === 'local') {
             renderInteresLocalDetails(post, content);
         } else {
             renderSaleDetails(post, content);

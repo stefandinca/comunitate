@@ -363,7 +363,7 @@ export function createPostCard(post) {
     article.innerHTML = `
         <!-- Post Header -->
         <div class="post-header">
-            ${post.type !== 'afaceri-locale' && post.type !== 'interes-local' ? `
+            ${post.type !== 'business' && post.type !== 'local' ? `
                 <div class="post-author" onclick="event.stopPropagation(); window.viewUserProfile('${post.uid}')">
                     <img src="${avatarSrc}" alt="${post.authorName}">
                     <div class="post-author-info">
@@ -373,13 +373,14 @@ export function createPostCard(post) {
                 </div>
             ` : `
                 <div class="post-author">
+                    <img src="/img/community-logo.png" alt="Comunitate Corbeanca" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
                     <div class="post-author-info">
-                        <h4>${post.businessName || post.title}</h4>
+                        <h4>Comunitate Corbeanca</h4>
                         <p>${date}</p>
                     </div>
                 </div>
             `}
-            ${post.authorPhone && post.type !== 'afaceri-locale' && post.type !== 'interes-local' ? `
+            ${post.authorPhone && post.type !== 'business' && post.type !== 'local' ? `
                 <button onclick="event.stopPropagation(); window.contactViaWhatsApp('${post.authorPhone}', '${post.title.replace(/'/g, "\\'")}', '${post.authorName.replace(/'/g, "\\'")}', '${post.type}')" class="px-4 py-2 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2" style="background: #25D366;">
                     WhatsApp
                 </button>
