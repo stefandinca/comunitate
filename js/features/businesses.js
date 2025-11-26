@@ -20,7 +20,7 @@ import {
     setHasMorePosts,
     getHasMorePosts
 } from '../core/state.js';
-import { renderBusinessPost } from './posts.js';
+import { createRatingDisplay } from './ratings.js';
 
 // ==================== LOAD BUSINESSES ====================
 
@@ -35,13 +35,37 @@ export async function loadBusinesses() {
     businessesContainer.innerHTML = '<div class="flex justify-center py-16"><span class="material-icons-round animate-spin text-3xl text-brand-primary">refresh</span></div>';
 
     try {
-        // Query for business and local posts
-        const q = query(
-            getCollectionRef(COLL_POSTS),
-            where('type', 'in', ['business', 'local']),
-            orderBy('timestamp', 'desc'),
-            limit(POSTS_PER_PAGE)
-        );
+        // Get filter and sort values
+        const ratingFilter = document.getElementById('business-rating-filter')?.value || 'all';
+        const sortBy = document.getElementById('business-sort')?.value || 'recent';
+
+        // Build base query
+        let q;
+        if (sortBy === 'rating') {
+            q = query(
+                getCollectionRef(COLL_POSTS),
+                where('type', 'in', ['business', 'local']),
+                orderBy('averageRating', 'desc'),
+                orderBy('timestamp', 'desc'),
+                limit(POSTS_PER_PAGE)
+            );
+        } else if (sortBy === 'popular') {
+            q = query(
+                getCollectionRef(COLL_POSTS),
+                where('type', 'in', ['business', 'local']),
+                orderBy('likeCount', 'desc'),
+                orderBy('timestamp', 'desc'),
+                limit(POSTS_PER_PAGE)
+            );
+        } else {
+            // Default: most recent
+            q = query(
+                getCollectionRef(COLL_POSTS),
+                where('type', 'in', ['business', 'local']),
+                orderBy('timestamp', 'desc'),
+                limit(POSTS_PER_PAGE)
+            );
+        }
 
         const snapshot = await getDocs(q);
 
@@ -52,11 +76,17 @@ export async function loadBusinesses() {
 
         businessesContainer.innerHTML = '';
 
-        const businesses = [];
+        let businesses = [];
         snapshot.forEach(doc => {
             const business = { id: doc.id, ...doc.data() };
             businesses.push(business);
         });
+
+        // Apply rating filter (client-side since Firestore doesn't support >= on non-indexed fields easily)
+        if (ratingFilter !== 'all') {
+            const minRating = parseInt(ratingFilter);
+            businesses = businesses.filter(b => (b.averageRating || 0) >= minRating);
+        }
 
         // Store last visible for pagination
         if (snapshot.docs.length > 0) {
@@ -170,10 +200,14 @@ function createBusinessCard(business) {
         ? description.substring(0, 150) + '...'
         : description;
 
+    const averageRating = business.averageRating || 0;
+    const ratingCount = business.ratingCount || 0;
+    const ratingHtml = createRatingDisplay(averageRating, ratingCount, false);
+
     article.innerHTML = `
         <div class="post-header">
             <div class="post-author">
-                <img src="/img/community-logo.png" alt="Comunitate Corbeanca" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                <img src="img/community-logo.png" alt="Comunitate Corbeanca" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
                 <div class="post-author-info">
                     <h4>Comunitate Corbeanca</h4>
                     <p>${date}</p>
@@ -185,6 +219,12 @@ function createBusinessCard(business) {
 
         <div class="post-content">
             <h3 class="post-title">${business.title}</h3>
+
+            <!-- Rating Display -->
+            <div class="mb-3">
+                ${ratingHtml}
+            </div>
+
             <p class="post-description">${truncatedDesc}</p>
 
             <span class="category-badge ${business.type}">${business.type === 'business' ? 'Afacere Locală' : 'Interes Local'}</span>
@@ -205,6 +245,22 @@ function createBusinessCard(business) {
     `;
 
     return article;
+}
+
+/**
+ * Initialize filter and sort controls
+ */
+export function initBusinessFilters() {
+    const ratingFilter = document.getElementById('business-rating-filter');
+    const sortControl = document.getElementById('business-sort');
+
+    if (ratingFilter) {
+        ratingFilter.addEventListener('change', loadBusinesses);
+    }
+
+    if (sortControl) {
+        sortControl.addEventListener('change', loadBusinesses);
+    }
 }
 
 // Window exports for HTML onclick handlers

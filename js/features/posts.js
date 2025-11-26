@@ -14,6 +14,7 @@ import {
     getDoc,
     updateDoc,
     deleteDoc,
+    addDoc,
     doc,
     setDoc,
     serverTimestamp,
@@ -45,7 +46,9 @@ import {
     setIsSearching,
     getSearchHistory,
     setSearchHistory,
-    isSuperAdmin
+    isSuperAdmin,
+    getPendingPostImageFile,
+    setPendingPostImageFile
 } from '../core/state.js';
 import { showToast } from '../ui/toast.js';
 import { timeAgo, makeLinksClickable, getCategoryLabel } from '../utils/helpers.js';
@@ -373,7 +376,7 @@ export function createPostCard(post) {
                 </div>
             ` : `
                 <div class="post-author">
-                    <img src="/img/community-logo.png" alt="Comunitate Corbeanca" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                    <img src="img/community-logo.png" alt="Comunitate Corbeanca" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
                     <div class="post-author-info">
                         <h4>Comunitate Corbeanca</h4>
                         <p>${date}</p>
@@ -977,4 +980,159 @@ export function toggleEventPrice() {
     const priceInput = document.getElementById('event-price-input');
     if (isPaid) priceInput.classList.remove('hidden');
     else priceInput.classList.add('hidden');
+}
+
+// ==================== CREATE POST ====================
+
+/**
+ * Initialize create post form
+ */
+export function initCreatePostForm() {
+    const createForm = document.getElementById('create-form');
+    if (!createForm) return;
+
+    createForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await handleCreatePost();
+    });
+
+    // Handle category change for showing/hiding fields
+    const postCategory = document.getElementById('post-category');
+    if (postCategory) {
+        postCategory.addEventListener('change', (e) => {
+            const type = e.target.value;
+            const priceSection = document.getElementById('section-price');
+            const eventDetails = document.getElementById('section-event-details');
+            const businessDetails = document.getElementById('section-business-details');
+
+            priceSection.classList.add('hidden');
+            eventDetails.classList.add('hidden');
+            businessDetails.classList.add('hidden');
+
+            if (type === 'event') {
+                eventDetails.classList.remove('hidden');
+            } else if (type === 'business' || type === 'local') {
+                businessDetails.classList.remove('hidden');
+            } else if (type === 'sale' || type === 'borrow') {
+                priceSection.classList.remove('hidden');
+            }
+        });
+    }
+}
+
+/**
+ * Handle create post submission
+ */
+async function handleCreatePost() {
+    const submitBtn = document.getElementById('btn-submit-post');
+    const currentUser = getCurrentUser();
+    const userProfile = getUserProfile();
+
+    if (!currentUser || !userProfile) {
+        showToast('Trebuie să fii autentificat', 'error');
+        return;
+    }
+
+    const type = document.getElementById('post-category').value;
+    const title = document.getElementById('post-title').value.trim();
+    const description = document.getElementById('post-desc').value.trim();
+    const phone = document.getElementById('post-phone').value.trim();
+    const imageFile = getPendingPostImageFile();
+
+    if (!title || !description) {
+        showToast('Te rog completează toate câmpurile obligatorii', 'error');
+        return;
+    }
+
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="material-icons-round animate-spin">refresh</span> Se publică...';
+
+    try {
+        // Upload image if present
+        let imageUrl = null;
+        if (imageFile) {
+            imageUrl = await uploadImage(imageFile, 'posts');
+        }
+
+        // Build post data
+        const postData = {
+            type,
+            title,
+            description,
+            authorId: currentUser.uid,
+            authorName: userProfile.name,
+            authorAvatar: userProfile.avatar || null,
+            authorPhone: phone || userProfile.phone || null,
+            uid: currentUser.uid,
+            timestamp: serverTimestamp(),
+            likes: [],
+            saves: [],
+            interested: [],
+            likeCount: 0,
+            commentCount: 0,
+            image: imageUrl
+        };
+
+        // Add type-specific fields
+        if (type === 'sale' || type === 'borrow') {
+            const price = document.getElementById('post-price').value;
+            if (price) postData.price = parseFloat(price);
+        }
+
+        if (type === 'event') {
+            const eventDate = document.getElementById('event-date').value;
+            const eventTime = document.getElementById('event-time').value;
+            const eventLocation = document.getElementById('event-location').value;
+            const isPaid = document.getElementById('event-paid').checked;
+
+            if (eventDate) postData.eventDate = eventDate;
+            if (eventTime) postData.eventTime = eventTime;
+            if (eventLocation) postData.eventLocation = eventLocation;
+
+            postData.isFree = !isPaid;
+            if (isPaid) {
+                const eventPrice = document.getElementById('event-price-val').value;
+                if (eventPrice) postData.eventPrice = parseFloat(eventPrice);
+            }
+        }
+
+        if (type === 'business' || type === 'local') {
+            const businessName = document.getElementById('business-name')?.value;
+            const businessHours = document.getElementById('business-hours')?.value;
+
+            if (businessName) postData.businessName = businessName;
+            if (businessHours) postData.businessHours = businessHours;
+
+            // Initialize rating fields for business posts
+            if (type === 'business') {
+                postData.averageRating = 0;
+                postData.ratingCount = 0;
+            }
+        }
+
+        // Create post in Firestore
+        await addDoc(getCollectionRef(COLL_POSTS), postData);
+
+        showToast('Postare publicată cu succes!', 'success');
+
+        // Reset form
+        document.getElementById('create-form').reset();
+        clearCreateImage();
+        setPendingPostImageFile(null);
+
+        // Close modal
+        window.toggleModal('modal-create', false);
+
+        // Reload posts
+        loadPosts();
+
+    } catch (error) {
+        console.error('Error creating post:', error);
+        showToast('Eroare la publicarea postării', 'error');
+    } finally {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Publică';
+    }
 }

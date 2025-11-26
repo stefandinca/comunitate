@@ -39,6 +39,7 @@ import {
 import { showToast } from '../ui/toast.js';
 import { timeAgo, makeLinksClickable } from '../utils/helpers.js';
 import { uploadImage } from '../utils/images.js';
+import { createRatingDisplay, createInteractiveRating, getUserRating, getPostRatingStats } from './ratings.js';
 
 // Module-level variables for location (shared with maps and profile)
 let selectedAddress = 'Corbeanca, Romania';
@@ -73,7 +74,7 @@ export async function openPostDetails(postId) {
         if (post.type === 'event') {
             renderEventDetails(post, content);
         } else if (post.type === 'business') {
-            renderBusinessDetails(post, content);
+            await renderBusinessDetails(post, content);
         } else if (post.type === 'local') {
             renderInteresLocalDetails(post, content);
         } else {
@@ -251,24 +252,40 @@ function renderInteresLocalDetails(post, container) {
  * @param {Object} post - Post data
  * @param {HTMLElement} container - Container element
  */
-function renderBusinessDetails(post, container) {
+async function renderBusinessDetails(post, container) {
     let cleanPhone = (post.authorPhone || '').replace(/\D/g, '');
     if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
     if (cleanPhone.length > 0 && !cleanPhone.startsWith('40')) cleanPhone = '40' + cleanPhone;
     const waHref = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Salut, pt anunțul: ' + post.title)}` : 'javascript:void(0)';
 
+    // Get rating stats and user's rating
+    const stats = await getPostRatingStats(post.id);
+    const userRating = await getUserRating(post.id);
+
+    const avgRatingHtml = createRatingDisplay(stats.average, stats.count, false);
+    const interactiveRatingHtml = createInteractiveRating(post.id, userRating);
+
     container.innerHTML = `
         <div class="space-y-4">
             ${post.image ? `<img src="${post.image}" class="w-full h-64 object-cover rounded-2xl border border-gray-100">` : ''}
+
             <!-- Business Name and Hours -->
             <div class="bg-gray-100 p-4 rounded-2xl border-2 border-gray-200">
                 <p class="text-xs font-bold text-gray-500 uppercase mb-1">Nume Afacere</p>
-                <p class="text-xl font-extrabold text-gray-800">${post.businessName || 'N/A'}</p>
+                <p class="text-xl font-extrabold text-gray-800">${post.businessName || post.title}</p>
                 ${post.businessHours ? `
                     <p class="text-xs font-bold text-gray-500 uppercase mt-3 mb-1">Program</p>
                     <p class="text-md font-bold text-gray-700">${post.businessHours}</p>
                 ` : ''}
             </div>
+
+            <!-- Average Rating Display -->
+            <div id="avg-rating-${post.id}" class="flex justify-center py-2">
+                ${avgRatingHtml}
+            </div>
+
+            <!-- Interactive Rating Component -->
+            ${interactiveRatingHtml}
 
             <!-- Description -->
             <div>

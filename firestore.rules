@@ -54,6 +54,18 @@ service cloud.firestore {
       // Super admins can delete any post
       allow delete: if isAuthenticated() &&
                       (isOwner(resource.data.authorId) || isSuperAdmin());
+
+      // Ratings subcollection
+      match /ratings/{ratingId} {
+        // Anyone can read ratings
+        allow read: if isAuthenticated();
+
+        // Users can create/update their own rating (one per user)
+        allow create, update: if isAuthenticated() && isOwner(ratingId);
+
+        // Users can delete their own rating
+        allow delete: if isAuthenticated() && isOwner(ratingId);
+      }
     }
 
     // Comments collection

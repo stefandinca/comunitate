@@ -9,7 +9,8 @@
       "Bash(do sed -i 's/firebasejs\\/10\\.8\\.0/firebasejs\\/11.6.1/g' \"$file\")",
       "Bash(done)",
       "Bash(firebase deploy:*)",
-      "Bash(firebase projects:list:*)"
+      "Bash(firebase projects:list:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

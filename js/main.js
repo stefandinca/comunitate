@@ -21,7 +21,8 @@ import {
     toggleEventPrice,
     handleSearch,
     clearSearch,
-    loadSearchHistory
+    loadSearchHistory,
+    initCreatePostForm
 } from './features/posts.js';
 
 // Profile module
@@ -65,7 +66,8 @@ import {
 // Businesses module
 import {
     loadBusinesses,
-    loadMoreBusinesses
+    loadMoreBusinesses,
+    initBusinessFilters
 } from './features/businesses.js';
 
 // ==================== WINDOW EXPOSURES ====================
@@ -142,6 +144,8 @@ async function initializeApp() {
         initProfileModule();
         initMessagingModule();
         initPostDetailsModule();
+        initBusinessFilters();
+        initCreatePostForm();
 
         // Setup search functionality
         loadSearchHistory();
